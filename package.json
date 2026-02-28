@@ -1,0 +1,17 @@
+{
+  "name": "deeppling",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Rippling/Deel-style onboarding + autonomous payroll on Unlink x Monad",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "pnpm -r --parallel dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint"
+  },
+  "packageManager": "pnpm@9.0.0"
+}

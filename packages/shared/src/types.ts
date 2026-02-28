@@ -1,0 +1,197 @@
+export const onboardingStepStatuses = [
+  "NOT_STARTED",
+  "IN_PROGRESS",
+  "PENDING_REVIEW",
+  "BLOCKED",
+  "COMPLETED"
+] as const;
+
+export type OnboardingStepStatus = (typeof onboardingStepStatuses)[number];
+
+export const employeeReadinessStatuses = ["NOT_READY", "READY", "EXCEPTION"] as const;
+export type EmployeeReadiness = (typeof employeeReadinessStatuses)[number];
+
+export const payrollRunStatuses = [
+  "DRAFT",
+  "REVIEWED_BY_AGENT",
+  "APPROVED",
+  "EXECUTING",
+  "PARTIAL_FAILURE",
+  "COMPLETED",
+  "HALTED"
+] as const;
+
+export type PayrollRunStatus = (typeof payrollRunStatuses)[number];
+
+export const kybStatuses = ["NOT_STARTED", "PENDING_REVIEW", "COMPLETED", "REJECTED"] as const;
+export type KybStatus = (typeof kybStatuses)[number];
+
+export const roles = ["OrgOwner", "PayrollAdmin", "FinanceApprover", "Auditor"] as const;
+export type Role = (typeof roles)[number];
+
+export const onboardingSteps = [
+  "identity",
+  "employment",
+  "tax",
+  "wallet",
+  "documents",
+  "review"
+] as const;
+export type OnboardingStep = (typeof onboardingSteps)[number];
+
+export interface AuditEvent {
+  id: string;
+  orgId: string;
+  actor: string;
+  type: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface Org {
+  id: string;
+  name: string;
+  domain: string;
+  adminEmail: string;
+  kybStatus: KybStatus;
+  kybDetails?: {
+    legalEntityName: string;
+    ein: string;
+    registeredAddress: string;
+    docs: string[];
+    reviewerNotes?: string;
+  };
+  treasury: {
+    accountId?: string;
+    multisigAddress?: string;
+    fundedTokenUnits: string;
+    fundedMonUnits: string;
+    tokenAddress?: string;
+    minTokenThreshold: string;
+    minMonThreshold: string;
+    status: OnboardingStepStatus;
+  };
+  payrollPolicy?: {
+    schedule: "MONTHLY";
+    cutoffDay: number;
+    payoutDay: number;
+    tokenAddress: string;
+    maxRunAmount: string;
+    maxPayoutAmount: string;
+    approvedTokens: string[];
+    status: OnboardingStepStatus;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Employee {
+  id: string;
+  orgId: string;
+  email: string;
+  fullName?: string;
+  roleTitle?: string;
+  state?: string;
+  annualSalaryCents?: number;
+  startDate?: string;
+  unlinkAccountId?: string;
+  onboarding: Record<OnboardingStep, OnboardingStepStatus>;
+  taxProfile?: {
+    filingStatus?: string;
+    allowances?: number;
+    extraWithholdingCents?: number;
+  };
+  invite: {
+    token: string;
+    expiresAt: string;
+    usedAt?: string;
+    consumed: boolean;
+  };
+  docSignature?: {
+    signedAt: string;
+    documentHash: string;
+    ip: string;
+  };
+  readiness: EmployeeReadiness;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RiskFlag {
+  code: string;
+  severity: "low" | "medium" | "high";
+  message: string;
+  employeeId?: string;
+}
+
+export interface AgentDecisionLog {
+  id: string;
+  orgId: string;
+  runId?: string;
+  category: "onboarding" | "payroll";
+  inputHash: string;
+  outputHash: string;
+  accepted: boolean;
+  summary: string;
+  createdAt: string;
+}
+
+export interface PayoutInstruction {
+  id: string;
+  runId: string;
+  orgId: string;
+  employeeId: string;
+  unlinkAccountId: string;
+  amountCents: number;
+  tokenAddress: string;
+  idempotencyKey: string;
+  status: "PENDING" | "SUBMITTED" | "CONFIRMED" | "FAILED" | "SKIPPED";
+  txHash?: string;
+  errorCode?: string;
+  attempts: number;
+  updatedAt: string;
+}
+
+export interface PayrollRun {
+  id: string;
+  orgId: string;
+  periodStart: string;
+  periodEnd: string;
+  status: PayrollRunStatus;
+  manifestHash: string;
+  resultHash?: string;
+  tokenAddress: string;
+  totalAmountCents: number;
+  employeeCount: number;
+  approvedAt?: string;
+  approvedBy?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExecutionReceipt {
+  instructionId: string;
+  txHash?: string;
+  gasLimit?: string;
+  gasPrice?: string;
+  confirmedAt?: string;
+  errorCode?: string;
+}
+
+export interface RunCircuitBreakerState {
+  runId: string;
+  halted: boolean;
+  reason?: string;
+  failureRate: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChecklistSummary {
+  companyVerified: boolean;
+  treasuryFunded: boolean;
+  policyActive: boolean;
+  employeesReady: number;
+  employeesInvited: number;
+  blockers: string[];
+}

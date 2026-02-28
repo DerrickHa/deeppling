@@ -1,0 +1,8 @@
+node_modules
+.pnpm-store
+.env
+.env.*
+dist
+.next
+coverage
+.DS_Store
