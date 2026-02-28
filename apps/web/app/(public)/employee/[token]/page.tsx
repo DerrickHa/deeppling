@@ -1,7 +1,7 @@
 import EmployeeOnboardingClient from "./EmployeeOnboardingClient";
 
 export default async function EmployeeOnboardingPage({
-  params
+  params,
 }: {
   params: Promise<{ token: string }>;
 }) {
