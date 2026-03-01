@@ -85,3 +85,11 @@ Implemented areas include:
 - Files changed: `apps/web/app/(public)/employee/[token]/EmployeeOnboardingClient.tsx`, `apps/web/components/employee/step-indicator.tsx`, `agent.md`.
 - Validation: `pnpm --filter @deeppling/web lint` passed with no warnings/errors; `pnpm --filter @deeppling/web build` passed (includes type checking and Next.js production build).
 - Risks/Follow-ups: Current wizard still uses static default field values from existing forms; consider pre-filling from persisted employee data in API payload for true resume/edit workflows. Token display is shortened in UI for cleanliness; if support/debug requires full token visibility, add a copy action instead of exposing full token by default.
+
+### 2026-03-01 - Onboarding visual direction narrowed to minimal fintech
+- Summary: Restyled the onboarding wizard shell and progress indicator to a cleaner, lower-noise minimal-fintech aesthetic while keeping the one-step flow, locked Next behavior, and auto-advance after save intact.
+- Rationale: Align the interface with product direction emphasizing clarity and trust over decorative effects.
+- Requirements/Invariants touched: Wizard navigation rules remain unchanged (`Next` gated on `COMPLETED` and auto-jump after successful step save); no API contract or readiness logic changes.
+- Files changed: `apps/web/app/(public)/employee/[token]/EmployeeOnboardingClient.tsx`, `apps/web/components/employee/step-indicator.tsx`, `agent.md`.
+- Validation: `pnpm --filter @deeppling/web lint` passed with no warnings/errors; `pnpm --filter @deeppling/web build` passed (includes type checking and production build).
+- Risks/Follow-ups: Invite token badge was replaced with invite-expiry context to reduce clutter; if support workflows need direct token access, add a controlled copy/reveal action rather than always-on display.

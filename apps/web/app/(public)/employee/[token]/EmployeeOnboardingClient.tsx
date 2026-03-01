@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
@@ -86,6 +86,17 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
       (step) => profile.onboarding[step] !== "COMPLETED"
     );
     return firstIncomplete === -1 ? stepOrder.length - 1 : firstIncomplete;
+  }, [profile]);
+
+  const inviteExpiryLabel = useMemo(() => {
+    if (!profile) return "N/A";
+    const parsed = new Date(profile.inviteExpiresAt);
+    if (Number.isNaN(parsed.getTime())) return "N/A";
+    return parsed.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   }, [profile]);
 
   const activeIndex = activeStepIndex ?? currentStepIndex;
@@ -265,18 +276,12 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
   const isLoading = busy === "load" && !profile;
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-28 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
-        <div className="absolute top-1/3 -left-24 h-56 w-56 rounded-full bg-chart-2/20 blur-3xl" />
-        <div className="absolute -right-20 bottom-12 h-56 w-56 rounded-full bg-chart-4/20 blur-3xl" />
-      </div>
-
+    <div className="min-h-screen flex flex-col">
       {/* Top bar */}
-      <header className="border-b border-border/70 bg-background/85 backdrop-blur-xl sticky top-0 z-30">
+      <header className="border-b border-border bg-background sticky top-0 z-30">
         <div className="max-w-4xl mx-auto flex items-center justify-between h-14 px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="size-7 rounded-lg bg-primary/90 shadow-sm flex items-center justify-center">
+            <div className="size-7 rounded-lg bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">D</span>
             </div>
             <span className="font-semibold text-lg tracking-tight">Deeppling</span>
@@ -288,30 +293,30 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6">
-        <section className="relative overflow-hidden rounded-3xl border border-white/50 bg-card/80 backdrop-blur-xl p-6 sm:p-8 shadow-[0_16px_45px_-30px_color-mix(in_oklch,var(--color-primary)_55%,transparent)]">
-          <div className="absolute right-0 top-0 h-36 w-36 rounded-full bg-primary/15 blur-3xl" />
-          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 space-y-5">
+        <section className="rounded-2xl border bg-card p-6 sm:p-7 shadow-sm">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-2">
-              <p className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                <Sparkles className="size-3.5" />
-                Guided onboarding
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Payroll onboarding workspace
               </p>
-              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Employee Self-Onboarding</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">Employee Self-Onboarding</h1>
               <p className="text-sm text-muted-foreground max-w-xl">
-                One focused step at a time. Save each section, then continue with Next.
+                One focused step at a time. Save each section to unlock Next.
               </p>
             </div>
-            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <div className="grid grid-cols-1 gap-2 min-w-56 sm:min-w-64">
               {profile && <Badge variant="secondary">{profile.email}</Badge>}
-              <Badge variant="outline">Token: {token.slice(0, 8)}...</Badge>
+              <Badge variant="outline" className="justify-center sm:justify-start">
+                Invite expires: {inviteExpiryLabel}
+              </Badge>
             </div>
           </div>
         </section>
 
         {/* Loading skeleton */}
         {isLoading && (
-          <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 space-y-4">
+          <div className="rounded-2xl border bg-card p-6 space-y-4 shadow-sm">
             <Skeleton className="h-5 w-32" />
             <Skeleton className="h-2.5 w-full" />
             <div className="space-y-3 pt-2">
@@ -326,8 +331,8 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
         {/* Loaded content */}
         {profile && (
           <>
-            <div className="rounded-2xl border border-white/50 bg-card/80 backdrop-blur-sm p-5 sm:p-6 space-y-4 shadow-[0_10px_30px_-24px_color-mix(in_oklch,var(--color-primary)_60%,transparent)]">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="rounded-2xl border bg-card p-5 sm:p-6 space-y-4 shadow-sm">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                     Step {activeIndex + 1} of {stepOrder.length}
@@ -358,7 +363,7 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
               </div>
             )}
 
-            <div className="rounded-3xl border border-white/50 bg-card/80 backdrop-blur-xl shadow-[0_16px_45px_-30px_color-mix(in_oklch,var(--color-primary)_65%,transparent)] overflow-hidden">
+            <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
               <div
                 key={activeStep}
                 className="animate-in fade-in slide-in-from-bottom-2 duration-300 [&_[data-slot=card]]:rounded-none [&_[data-slot=card]]:border-0 [&_[data-slot=card]]:bg-transparent [&_[data-slot=card]]:shadow-none"
@@ -366,7 +371,7 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
                 {renderActiveStep()}
               </div>
 
-              <div className="border-t bg-muted/35 px-5 py-4 sm:px-6 sm:py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="border-t bg-muted/20 px-5 py-4 sm:px-6 sm:py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-xs text-muted-foreground">
                   {isLastStep
                     ? "Final step: submit when everything looks correct."
@@ -399,7 +404,7 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
 
         {/* Error without profile (failed initial load) */}
         {!isLoading && !profile && error && (
-          <div className="space-y-4">
+          <div className="space-y-4 rounded-2xl border bg-card p-6 shadow-sm">
             <ErrorAlert message={error} />
             <p className="text-sm text-muted-foreground">
               Could not load your onboarding profile. The invite token may be invalid or expired.
