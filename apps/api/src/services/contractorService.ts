@@ -417,7 +417,7 @@ export class ContractorService {
     const preflight = this.monadPreflight.run({
       tokenUnits: balances.tokenUnits,
       monWei: balances.monWei,
-      requiredTokenUnits: String(timesheet.totalAmountCents),
+      requiredTokenUnits: this.unlink.centsToTokenUnits(timesheet.totalAmountCents),
       minMonWei: org.treasury.minMonThreshold
     });
 

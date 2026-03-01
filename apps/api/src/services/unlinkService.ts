@@ -28,6 +28,10 @@ export interface UnlinkAdapter {
   }) => Promise<TransferResult>;
   waitForConfirmation: (txHash: string) => Promise<{ confirmedAt: string }>;
   credit: (accountId: string, tokenUnits: bigint, monWei: bigint) => Promise<void>;
+  /** Convert a cents amount to the token-unit scale used by getBalances(). */
+  centsToTokenUnits: (amountCents: number) => string;
+  /** Return the pre-existing treasury account if the adapter owns one (real mode). */
+  getTreasuryAccount?: () => CreateAccountResult | null;
   /** Get the burner EOA address for faucet funding (real mode only). */
   getBurnerAddress?: () => Promise<string>;
   /** Deposit from burner EOA into the Unlink privacy pool (real mode only). */
@@ -107,5 +111,10 @@ export class MockUnlinkAdapter implements UnlinkAdapter {
     current.tokenUnits += tokenUnits;
     current.monWei += monWei;
     this.accountBalances.set(accountId, current);
+  }
+
+  centsToTokenUnits(amountCents: number): string {
+    // Mock balances are stored in cents, so no conversion needed.
+    return String(amountCents);
   }
 }

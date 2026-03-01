@@ -149,6 +149,17 @@ export class RealUnlinkAdapter implements UnlinkAdapter {
     );
   }
 
+  centsToTokenUnits(amountCents: number): string {
+    // Real balances are in wei; convert cents to wei using the configured factor.
+    return (BigInt(amountCents) * this.centsToWeiFactor).toString();
+  }
+
+  getTreasuryAccount(): CreateAccountResult | null {
+    // Return the SDK's index-0 treasury so setupTreasury can reuse it
+    // instead of creating a new account at index 1+.
+    return { accountId: this.treasuryAddress };
+  }
+
   async getBurnerAddress(): Promise<string> {
     const burner = await this.unlink.burner.addressOf(0);
     return burner.address;

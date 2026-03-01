@@ -313,7 +313,7 @@ export class EarnedWageService {
     const preflight = this.monadPreflight.run({
       tokenUnits: balances.tokenUnits,
       monWei: balances.monWei,
-      requiredTokenUnits: String(input.amountCents),
+      requiredTokenUnits: this.unlink.centsToTokenUnits(input.amountCents),
       minMonWei: org.treasury.minMonThreshold
     });
 

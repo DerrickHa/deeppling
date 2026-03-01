@@ -146,7 +146,7 @@ export class OnboardingService {
       throw new Error("ORG_NOT_FOUND");
     }
 
-    const treasuryAccount = await this.unlink.createAccount(`${org.domain}-treasury`);
+    const treasuryAccount = this.unlink.getTreasuryAccount?.() ?? await this.unlink.createAccount(`${org.domain}-treasury`);
     const multisig = await this.unlink.createMultisig(input.signerAddresses, 2);
 
     org.treasury.accountId = treasuryAccount.accountId;

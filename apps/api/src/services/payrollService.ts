@@ -287,10 +287,11 @@ export class PayrollService {
     const instructions = this.store.getInstructions(run.id).filter((instruction) => instruction.status !== "CONFIRMED");
     const balances = await this.unlink.getBalances(org.treasury.accountId, run.tokenAddress);
 
+    const totalCents = instructions.reduce((sum, instruction) => sum + instruction.amountCents, 0);
     const preflight = this.monadPreflight.run({
       tokenUnits: balances.tokenUnits,
       monWei: balances.monWei,
-      requiredTokenUnits: String(instructions.reduce((sum, instruction) => sum + instruction.amountCents, 0)),
+      requiredTokenUnits: this.unlink.centsToTokenUnits(totalCents),
       minMonWei: org.treasury.minMonThreshold
     });
 
