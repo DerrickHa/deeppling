@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiRequest, type ChecklistResponse } from "@/lib/api";
 import { useWorkspace } from "@/lib/workspace-context";
 import { PageHeader } from "@/components/shared/page-header";
@@ -36,12 +36,25 @@ interface RiskFlag {
 }
 
 export default function AdminPage() {
-  const { setOrgId } = useWorkspace();
+  const { orgId: workspaceOrgId, setOrgId } = useWorkspace();
   const [org, setOrg] = useState<OrgResponse | null>(null);
   const [checklist, setChecklist] = useState<ChecklistResponse | null>(null);
   const [riskFlags, setRiskFlags] = useState<RiskFlag[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!workspaceOrgId || org) return;
+    let cancelled = false;
+    apiRequest<OrgResponse>(`/orgs/${workspaceOrgId}`)
+      .then((fetched) => {
+        if (!cancelled) setOrg(fetched);
+      })
+      .catch(() => {
+        if (!cancelled) setOrgId("");
+      });
+    return () => { cancelled = true; };
+  }, [workspaceOrgId, org, setOrgId]);
 
   const orgId = org?.id ?? "";
 

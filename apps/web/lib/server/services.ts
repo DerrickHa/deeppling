@@ -1,8 +1,12 @@
 import { createServices, type ServiceContainer } from "../../api-lib/services/container";
 
-let _services: ServiceContainer | null = null;
+const globalForServices = globalThis as unknown as {
+  __deeppling_services?: ServiceContainer;
+};
 
 export async function getServices(): Promise<ServiceContainer> {
-  if (!_services) _services = await createServices();
-  return _services;
+  if (!globalForServices.__deeppling_services) {
+    globalForServices.__deeppling_services = await createServices();
+  }
+  return globalForServices.__deeppling_services;
 }
