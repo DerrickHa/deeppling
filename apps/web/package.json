@@ -10,7 +10,9 @@
     "test": "node --test"
   },
   "dependencies": {
+    "@deeppling/agent": "workspace:^",
     "@deeppling/shared": "workspace:*",
+    "@deeppling/worker": "workspace:^",
     "@fontsource-variable/inter": "^5.2.8",
     "@tailwindcss/postcss": "^4.2.1",
     "lucide-react": "^0.575.0",
@@ -20,7 +22,9 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "sonner": "^2.0.7",
-    "tailwindcss": "^4.2.1"
+    "tailwindcss": "^4.2.1",
+    "@unlink-xyz/node": "0.1.7-canary.7512856",
+    "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",

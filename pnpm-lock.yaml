@@ -44,15 +44,24 @@ importers:
 
   apps/web:
     dependencies:
+      '@deeppling/agent':
+        specifier: workspace:^
+        version: link:../../packages/agent
       '@deeppling/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@deeppling/worker':
+        specifier: workspace:^
+        version: link:../../packages/worker
       '@fontsource-variable/inter':
         specifier: ^5.2.8
         version: 5.2.8
       '@tailwindcss/postcss':
         specifier: ^4.2.1
         version: 4.2.1
+      '@unlink-xyz/node':
+        specifier: 0.1.7-canary.7512856
+        version: 0.1.7-canary.7512856
       lucide-react:
         specifier: ^0.575.0
         version: 0.575.0(react@19.0.0)
@@ -77,6 +86,9 @@ importers:
       tailwindcss:
         specifier: ^4.2.1
         version: 4.2.1
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^22.10.7

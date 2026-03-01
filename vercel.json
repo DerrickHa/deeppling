@@ -1,0 +1,6 @@
+{
+  "buildCommand": "pnpm --filter @deeppling/web build",
+  "installCommand": "pnpm install",
+  "framework": "nextjs",
+  "outputDirectory": "apps/web/.next"
+}
