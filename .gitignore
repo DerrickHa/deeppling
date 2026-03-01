@@ -6,3 +6,4 @@ dist
 .next
 coverage
 .DS_Store
+data/

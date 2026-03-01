@@ -29,6 +29,7 @@ interface InstructionPayload {
   status: string;
   txHash?: string;
   errorCode?: string;
+  relayId?: string;
 }
 
 interface RunResponse {
@@ -203,21 +204,46 @@ export default function PayrollPage() {
               <span className="badge">Status: {runResponse.run.status}</span>
               <span className="badge">Employees: {runResponse.run.employeeCount}</span>
               <span className="badge">Total (cents): {runResponse.run.totalAmountCents}</span>
-              {runResponse.breaker ? (
-                <span className={`badge ${runResponse.breaker.halted ? "warn" : "ok"}`}>
-                  Breaker: {runResponse.breaker.halted ? "HALTED" : "OK"} ({Math.round(runResponse.breaker.failureRate * 100)}%)
-                </span>
-              ) : null}
             </div>
+            {runResponse.breaker ? (
+              <div className={`card ${runResponse.breaker.halted ? "warn" : ""}`} style={{ padding: "12px", background: runResponse.breaker.halted ? "rgba(255,80,80,0.1)" : "rgba(80,255,120,0.07)", borderRadius: "6px" }}>
+                <div className="row wrap" style={{ alignItems: "center", gap: "8px" }}>
+                  <strong>Circuit Breaker:</strong>
+                  <span className={`badge ${runResponse.breaker.halted ? "warn" : "ok"}`}>
+                    {runResponse.breaker.halted ? "HALTED" : "OK"}
+                  </span>
+                  <span className="badge">Failure rate: {Math.round(runResponse.breaker.failureRate * 100)}%</span>
+                </div>
+                {runResponse.breaker.reason ? (
+                  <p style={{ marginTop: "4px", color: "var(--alert)" }}>Reason: {runResponse.breaker.reason}</p>
+                ) : null}
+              </div>
+            ) : null}
             <p>
               Manifest hash: <code>{runResponse.run.manifestHash.slice(0, 24)}...</code>
             </p>
             <ul className="list">
               {runResponse.instructions.slice(0, 12).map((instruction) => (
-                <li key={instruction.id}>
-                  {instruction.employeeId.slice(0, 8)}... | ${instruction.amountCents / 100} | {instruction.status}
-                  {instruction.txHash ? ` | tx: ${instruction.txHash.slice(0, 12)}...` : ""}
-                  {instruction.errorCode ? ` | error: ${instruction.errorCode}` : ""}
+                <li key={instruction.id} style={{ display: "flex", flexWrap: "wrap", gap: "6px", alignItems: "center" }}>
+                  <code>{instruction.employeeId.slice(0, 8)}...</code>
+                  <span>${instruction.amountCents / 100}</span>
+                  <span className="badge">{instruction.status}</span>
+                  {instruction.relayId ? (
+                    <span>relay: <code>{instruction.relayId}</code></span>
+                  ) : null}
+                  {instruction.txHash ? (
+                    <a
+                      href={`https://testnet.monadexplorer.com/tx/${instruction.txHash}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="badge ok"
+                    >
+                      tx: {instruction.txHash.slice(0, 12)}...
+                    </a>
+                  ) : null}
+                  {instruction.errorCode ? (
+                    <span className="badge warn">error: {instruction.errorCode}</span>
+                  ) : null}
                 </li>
               ))}
             </ul>

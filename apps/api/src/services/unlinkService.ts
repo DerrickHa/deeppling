@@ -27,6 +27,11 @@ export interface UnlinkAdapter {
     tokenAddress: string;
   }) => Promise<TransferResult>;
   waitForConfirmation: (txHash: string) => Promise<{ confirmedAt: string }>;
+  credit: (accountId: string, tokenUnits: bigint, monWei: bigint) => Promise<void>;
+  /** Get the burner EOA address for faucet funding (real mode only). */
+  getBurnerAddress?: () => Promise<string>;
+  /** Deposit from burner EOA into the Unlink privacy pool (real mode only). */
+  depositFromBurner?: (amount: bigint, tokenAddress: string) => Promise<string>;
 }
 
 export class MockUnlinkAdapter implements UnlinkAdapter {
@@ -97,7 +102,7 @@ export class MockUnlinkAdapter implements UnlinkAdapter {
     return { confirmedAt: nowIso() };
   }
 
-  credit(accountId: string, tokenUnits: bigint, monWei: bigint): void {
+  async credit(accountId: string, tokenUnits: bigint, monWei: bigint): Promise<void> {
     const current = this.accountBalances.get(accountId) ?? { tokenUnits: BigInt(0), monWei: BigInt(0) };
     current.tokenUnits += tokenUnits;
     current.monWei += monWei;

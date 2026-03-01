@@ -49,8 +49,8 @@ Dependency graph: `api` depends on `shared`, `agent`, `worker`. `web` depends on
 ## Key Patterns
 
 - **In-memory store**: `apps/api/src/services/store.ts` — `InMemoryStore` class using `Map<string, T>` collections. No ORM or database client yet; all state lives in memory.
-- **Service container**: `apps/api/src/services/container.ts` — `createServices()` wires store + adapters into `OnboardingService` and `PayrollService`.
-- **Mock adapter**: `MockUnlinkAdapter` in `apps/api/src/services/unlinkService.ts` implements `TransferAdapter` for development without real blockchain calls.
+- **Service container**: `apps/api/src/services/container.ts` — `createServices()` (async) wires store + adapters into `OnboardingService` and `PayrollService`. Toggles between `MockUnlinkAdapter` and `RealUnlinkAdapter` based on `USE_REAL_UNLINK`.
+- **Unlink adapters**: `MockUnlinkAdapter` in `unlinkService.ts` for development; `RealUnlinkAdapter` in `realUnlinkService.ts` for real private transfers on Monad testnet via `@unlink-xyz/node` SDK.
 - **State machines**: Entities use typed status enums (`OnboardingStepStatus`, `PayrollRunStatus`, `KybStatus`, `EmployeeReadiness`) defined as `const` arrays in `packages/shared/src/types.ts` with Zod schemas derived from them in `packages/shared/src/schemas.ts`.
 - **Zod-first validation**: Every API endpoint validates input with Zod schemas from `@deeppling/shared`. Schemas are the source of truth for request shapes.
 - **Agent audit trail**: Risk analysis functions in `packages/agent/` produce SHA-256 hashed `AgentDecisionLog` entries for deterministic auditability.
@@ -66,6 +66,10 @@ The API reads config from `apps/api/src/config.ts` with defaults suitable for lo
 | `PORT` | `4000` | API server port |
 | `MONAD_CHAIN_ID` | `10143` | Monad testnet chain ID |
 | `MONAD_RPC_URL` | `https://testnet-rpc.monad.xyz` | Monad RPC endpoint |
-| `PAYROLL_TOKEN_ADDRESS` | `0x...0010` | Token contract for payroll |
+| `PAYROLL_TOKEN_ADDRESS` | `0xEeee...EEeE` | Token contract for payroll (native MON) |
 | `MAX_RUN_AMOUNT_CENTS` | `1000000000` | Per-run cap (cents) |
 | `MAX_PAYOUT_AMOUNT_CENTS` | `100000000` | Per-employee cap (cents) |
+| `USE_REAL_UNLINK` | `false` | Toggle real Unlink SDK vs mock adapter |
+| `UNLINK_STORAGE_PATH` | `./data/unlink-wallet.db` | SQLite path for Unlink wallet state |
+| `UNLINK_POOL_ADDRESS` | `0x0813...a254` | Unlink pool contract on Monad testnet |
+| `CENTS_TO_WEI_FACTOR` | `100000000000000` | Conversion: 1 cent = 1e14 wei (0.01 MON = 100 cents) |

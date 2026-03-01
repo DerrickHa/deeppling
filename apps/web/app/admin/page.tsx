@@ -5,6 +5,25 @@ import Link from "next/link";
 import { apiRequest, type ChecklistResponse, type InviteResult } from "../../lib/api";
 import { StatusBadge } from "../../components/StatusBadge";
 
+interface TreasuryStatusResponse {
+  treasuryAccountId?: string;
+  treasuryStatus: string;
+  fundedTokenUnits: string;
+  fundedMonUnits: string;
+  poolBalance?: { tokenUnits: string; monWei: string };
+  burnerAddress?: string;
+  faucetUrl?: string;
+}
+
+interface TreasuryFundResponse {
+  success: boolean;
+  relayId: string;
+  burnerAddress: string;
+  depositedAmount: string;
+  tokenAddress: string;
+  message: string;
+}
+
 interface OrgResponse {
   id: string;
   kybStatus: string;
@@ -31,6 +50,8 @@ export default function AdminPage() {
   const [checklist, setChecklist] = useState<ChecklistResponse | null>(null);
   const [invite, setInvite] = useState<InviteResult | null>(null);
   const [riskFlags, setRiskFlags] = useState<RiskFlag[]>([]);
+  const [treasuryStatus, setTreasuryStatus] = useState<TreasuryStatusResponse | null>(null);
+  const [treasuryFundResult, setTreasuryFundResult] = useState<TreasuryFundResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -176,6 +197,27 @@ export default function AdminPage() {
     });
   };
 
+  const fetchTreasuryStatus = async () => {
+    if (!orgId) return;
+
+    await safeAction("treasury-status", async () => {
+      const result = await apiRequest<TreasuryStatusResponse>(`/orgs/${orgId}/treasury/status`);
+      setTreasuryStatus(result);
+    });
+  };
+
+  const fundTreasury = async () => {
+    if (!orgId) return;
+
+    await safeAction("treasury-fund", async () => {
+      const result = await apiRequest<TreasuryFundResponse>(`/orgs/${orgId}/treasury/fund`, {
+        method: "POST"
+      });
+      setTreasuryFundResult(result);
+      await fetchTreasuryStatus();
+    });
+  };
+
   return (
     <>
       <section className="hero">
@@ -218,6 +260,59 @@ export default function AdminPage() {
             Configure Treasury
           </button>
         </form>
+
+        <article className="card grid">
+          <div className="row wrap" style={{ justifyContent: "space-between", alignItems: "center" }}>
+            <h2>Treasury Status</h2>
+            <div className="row wrap">
+              <button type="button" className="secondary" onClick={fetchTreasuryStatus} disabled={!orgId}>
+                Refresh Status
+              </button>
+              {treasuryStatus?.burnerAddress ? (
+                <button type="button" onClick={fundTreasury} disabled={!orgId || busy === "treasury-fund"}>
+                  Fund Treasury
+                </button>
+              ) : null}
+            </div>
+          </div>
+          {treasuryStatus ? (
+            <ul className="list">
+              {treasuryStatus.treasuryAccountId ? (
+                <li className="row wrap">
+                  Account ID <code style={{ marginLeft: "8px" }}>{treasuryStatus.treasuryAccountId}</code>
+                </li>
+              ) : null}
+              <li className="row wrap">
+                Status <span className={`badge ${treasuryStatus.treasuryStatus === "ACTIVE" ? "ok" : "warn"}`} style={{ marginLeft: "8px" }}>{treasuryStatus.treasuryStatus}</span>
+              </li>
+              {treasuryStatus.burnerAddress ? (
+                <li className="row wrap">
+                  Burner EOA&nbsp;
+                  <code>{treasuryStatus.burnerAddress}</code>&nbsp;
+                  <a href="https://faucet.monad.xyz" target="_blank" rel="noreferrer" className="badge">
+                    Get Faucet MON
+                  </a>
+                </li>
+              ) : null}
+              {treasuryStatus.poolBalance ? (
+                <li>
+                  Pool Balance: <code>{treasuryStatus.poolBalance.tokenUnits}</code> tokens / <code>{treasuryStatus.poolBalance.monWei}</code> wei
+                </li>
+              ) : null}
+              <li>Funded tokens: <code>{treasuryStatus.fundedTokenUnits}</code></li>
+              <li>Funded MON: <code>{treasuryStatus.fundedMonUnits}</code></li>
+            </ul>
+          ) : (
+            <p>No treasury status loaded. Click Refresh Status after configuring treasury.</p>
+          )}
+          {treasuryFundResult ? (
+            <div className="card" style={{ marginTop: "8px", background: "var(--surface-2, #1a1a2e)" }}>
+              <p><strong>Fund Result:</strong> {treasuryFundResult.message}</p>
+              <p>Relay ID: <code>{treasuryFundResult.relayId}</code></p>
+              <p>Deposited: <code>{treasuryFundResult.depositedAmount}</code></p>
+            </div>
+          ) : null}
+        </article>
 
         <form className="card grid" onSubmit={handlePolicy}>
           <h2>4. Payroll Policy</h2>

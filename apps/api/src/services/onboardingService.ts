@@ -126,10 +126,7 @@ export class OnboardingService {
 
     org.treasury.status = fundedEnough ? "COMPLETED" : "BLOCKED";
 
-    const adapter = this.unlink as { credit?: (accountId: string, tokenUnits: bigint, monWei: bigint) => void };
-    if (adapter.credit) {
-      adapter.credit(treasuryAccount.accountId, BigInt(input.fundedTokenUnits), BigInt(input.fundedMonUnits));
-    }
+    await this.unlink.credit(treasuryAccount.accountId, BigInt(input.fundedTokenUnits), BigInt(input.fundedMonUnits));
 
     this.store.updateOrg(org);
     this.pushAudit(orgId, actor, "TREASURY_CONFIGURED", {
