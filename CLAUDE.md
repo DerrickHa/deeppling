@@ -59,7 +59,20 @@ Packages export raw TypeScript source (`"main": "src/index.ts"`), not built arti
 
 ### Error convention
 
-Services throw errors with message prefixes like `BAD_REQUEST:`, `NOT_FOUND`, `UNAUTHORIZED`. The `parseError()` function in `apps/api/src/lib/http.ts` maps these prefixes to HTTP status codes. Route handlers catch errors and call `parseError()` to produce the response. When adding new error cases, follow this prefix convention.
+Services throw errors with message prefixes that `parseError()` in `apps/api/src/lib/http.ts` maps to HTTP status codes. Full mapping:
+
+| Prefix / keyword | HTTP status |
+|---|---|
+| `BAD_REQUEST:` | 400 |
+| `NOT_FOUND`, `INVITE_EXPIRED` | 404 |
+| `UNAUTHORIZED` | 403 |
+| `PREFLIGHT_FAILED` | 422 |
+| `SIGNATURE`, `WALLET_CHALLENGE`, `TOKEN_INVALID`, `SESSION_EXPIRED` | 401 |
+| `NOT_READY`, `NOT_EXECUTABLE`, `EXCEEDS` | 409 |
+| (other `Error`) | 400 |
+| (non-`Error`) | 500 |
+
+Route handlers catch errors and call `parseError()` to produce the response. When adding new error cases, follow this prefix convention. Also: `parseBody()` in the same file validates request bodies with Zod and throws `BAD_REQUEST:` on failure.
 
 ### Service container and route wiring
 
@@ -108,10 +121,19 @@ The API reads config from `apps/api/src/config.ts` with defaults suitable for lo
 | `PORT` | `4000` | API server port |
 | `MONAD_CHAIN_ID` | `10143` | Monad testnet chain ID |
 | `MONAD_RPC_URL` | `https://testnet-rpc.monad.xyz` | Monad RPC endpoint |
+| `AUTH_SECRET` | `deeppling-dev-secret` | JWT/session signing secret |
+| `SESSION_TTL_HOURS` | `12` | Session expiry |
+| `EWA_ENABLED` | `true` | Toggle earned wage access feature |
+| `CONTRACTOR_ENABLED` | `true` | Toggle contractor feature |
 | `PAYROLL_TOKEN_ADDRESS` | `0xEeee...EEeE` | Token contract for payroll (native MON) |
 | `MAX_RUN_AMOUNT_CENTS` | `1000000000` | Per-run cap (cents) |
 | `MAX_PAYOUT_AMOUNT_CENTS` | `100000000` | Per-employee cap (cents) |
+| `TREASURY_MON_MIN_WEI` | `10000000000000000` | Min MON reserve in treasury (wei) |
 | `USE_REAL_UNLINK` | `false` | Toggle real Unlink SDK vs mock adapter |
 | `UNLINK_STORAGE_PATH` | `./data/unlink-wallet.db` | SQLite path for Unlink wallet state |
 | `UNLINK_POOL_ADDRESS` | `0x0813...a254` | Unlink pool contract on Monad testnet |
+| `UNLINK_PROVER_URL` | _(none)_ | Unlink prover service URL (real adapter) |
+| `UNLINK_RELAYER_URL` | _(none)_ | Unlink relayer service URL (real adapter) |
 | `CENTS_TO_WEI_FACTOR` | `100000000000000` | Conversion: 1 cent = 1e14 wei (0.01 MON = 100 cents) |
+
+The web app reads `NEXT_PUBLIC_API_BASE_URL` (default `http://localhost:4000`) for the API base URL.
