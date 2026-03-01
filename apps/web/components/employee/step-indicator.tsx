@@ -24,7 +24,7 @@ export function StepIndicator({ steps, onboarding, currentStep }: StepIndicatorP
   return (
     <nav aria-label="Onboarding progress" className="w-full">
       {/* Desktop: full step bar */}
-      <ol className="hidden sm:flex items-center w-full gap-1">
+      <ol className="hidden sm:flex items-center w-full gap-1.5">
         {steps.map((step, index) => {
           const status = onboarding[step];
           const isCompleted = status === "COMPLETED";
@@ -39,15 +39,15 @@ export function StepIndicator({ steps, onboarding, currentStep }: StepIndicatorP
               <div className="flex flex-col items-center gap-1.5">
                 <div
                   className={cn(
-                    "flex items-center justify-center size-9 rounded-full border-2 text-xs font-semibold transition-colors shrink-0 shadow-sm",
+                    "flex items-center justify-center size-8 rounded-full border text-xs font-semibold transition-colors shrink-0",
                     isCompleted &&
                       "border-primary bg-primary text-primary-foreground",
                     isCurrent &&
                       !isCompleted &&
-                      "border-primary text-primary bg-primary/10 ring-4 ring-primary/15",
+                      "border-primary text-primary bg-primary/10",
                     !isCompleted &&
                       !isCurrent &&
-                      "border-muted-foreground/25 text-muted-foreground/70 bg-card"
+                      "border-border text-muted-foreground bg-card"
                   )}
                   aria-current={isCurrent ? "step" : undefined}
                 >
@@ -62,7 +62,7 @@ export function StepIndicator({ steps, onboarding, currentStep }: StepIndicatorP
                     "text-[11px] font-medium leading-none",
                     isCompleted && "text-primary",
                     isCurrent && !isCompleted && "text-foreground",
-                    !isCompleted && !isCurrent && "text-muted-foreground/65"
+                    !isCompleted && !isCurrent && "text-muted-foreground"
                   )}
                 >
                   {stepLabels[step] ?? step}
@@ -72,8 +72,8 @@ export function StepIndicator({ steps, onboarding, currentStep }: StepIndicatorP
               {!isLast && (
                 <div
                   className={cn(
-                    "flex-1 h-0.5 mx-2 mt-[-19px] rounded-full transition-colors",
-                    isCompleted ? "bg-primary/80" : "bg-border/80"
+                    "flex-1 h-px mx-2 mt-[-18px] rounded-full transition-colors",
+                    isCompleted ? "bg-primary/70" : "bg-border"
                   )}
                   aria-hidden="true"
                 />
@@ -94,15 +94,15 @@ export function StepIndicator({ steps, onboarding, currentStep }: StepIndicatorP
             <div
               key={step}
               className={cn(
-                "flex items-center justify-center size-7 rounded-full text-[10px] font-bold transition-colors shadow-sm",
+                "flex items-center justify-center size-7 rounded-full text-[10px] font-bold transition-colors border",
                 isCompleted &&
-                  "bg-primary text-primary-foreground",
+                  "border-primary bg-primary text-primary-foreground",
                 isCurrent &&
                   !isCompleted &&
-                  "border-2 border-primary text-primary bg-primary/10 ring-2 ring-primary/15",
+                  "border-primary text-primary bg-primary/10",
                 !isCompleted &&
                   !isCurrent &&
-                  "bg-muted/70 text-muted-foreground"
+                  "border-border bg-card text-muted-foreground"
               )}
               aria-label={`Step ${index + 1}: ${stepLabels[step] ?? step}${isCompleted ? " (completed)" : isCurrent ? " (current)" : ""}`}
             >
