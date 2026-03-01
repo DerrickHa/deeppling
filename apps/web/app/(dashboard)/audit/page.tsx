@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ScrollText, RefreshCw } from "lucide-react";
+import { useWorkspace } from "@/lib/workspace-context";
 import { apiRequest } from "@/lib/api";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorAlert } from "@/components/shared/error-alert";
@@ -64,7 +65,7 @@ const formatUsd = (cents: number): string =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 
 export default function AuditPage() {
-  const [orgId, setOrgId] = useState("");
+  const { orgId, setOrgId } = useWorkspace();
   const [data, setData] = useState<AuditPayload | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

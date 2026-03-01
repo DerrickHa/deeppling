@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { apiRequest, type ChecklistResponse } from "@/lib/api";
+import { useWorkspace } from "@/lib/workspace-context";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorAlert } from "@/components/shared/error-alert";
 import { WizardProgress } from "@/components/admin/wizard-progress";
@@ -35,6 +36,7 @@ interface RiskFlag {
 }
 
 export default function AdminPage() {
+  const { setOrgId } = useWorkspace();
   const [org, setOrg] = useState<OrgResponse | null>(null);
   const [checklist, setChecklist] = useState<ChecklistResponse | null>(null);
   const [riskFlags, setRiskFlags] = useState<RiskFlag[]>([]);
@@ -70,6 +72,7 @@ export default function AdminPage() {
 
   const handleOrgCreated = (created: OrgResponse) => {
     setOrg(created);
+    setOrgId(created.id);
     setChecklist(null);
     setRiskFlags([]);
   };

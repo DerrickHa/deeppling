@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { apiRequest } from "@/lib/api";
+import { useWorkspace } from "@/lib/workspace-context";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/page-header";
 import { ErrorAlert } from "@/components/shared/error-alert";
@@ -59,7 +60,7 @@ interface RiskFlag {
 }
 
 export default function PayrollPage() {
-  const [orgId, setOrgId] = useState("");
+  const { orgId, setOrgId } = useWorkspace();
   const [runId, setRunId] = useState("");
   const [runResponse, setRunResponse] = useState<RunResponse | null>(null);
   const [flags, setFlags] = useState<RiskFlag[]>([]);

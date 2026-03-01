@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
+import { useWorkspace } from "@/lib/workspace-context";
 import { WalletCards, RefreshCw, ArrowDownCircle, Clock3 } from "lucide-react";
 import { apiRequest, buildMockSignature } from "@/lib/api";
 import { PageHeader } from "@/components/shared/page-header";
@@ -42,7 +43,7 @@ const formatUsd = (cents: number): string =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 
 export default function EarnedPayPage() {
-  const [orgId, setOrgId] = useState("");
+  const { orgId, setOrgId } = useWorkspace();
   const [employeeId, setEmployeeId] = useState("");
   const [employeeEmail, setEmployeeEmail] = useState("employee1@deeppling.test");
   const [walletAddress, setWalletAddress] = useState("0xabc0000000000000000000000000000000000001");

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { useWorkspace } from "@/lib/workspace-context";
 import { Handshake, PlusCircle, RefreshCw, ShieldAlert, CheckCircle2, Undo2 } from "lucide-react";
 import { apiRequest, buildMockSignature } from "@/lib/api";
 import { PageHeader } from "@/components/shared/page-header";
@@ -40,7 +41,7 @@ const formatUsd = (cents: number): string =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(cents / 100);
 
 export default function ContractorsPage() {
-  const [orgId, setOrgId] = useState("");
+  const { orgId, setOrgId } = useWorkspace();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 

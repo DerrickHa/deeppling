@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { navItems } from "@/lib/constants";
+import { useWorkspace } from "@/lib/workspace-context";
 
 const iconMap = {
   LayoutDashboard,
@@ -28,6 +29,7 @@ const iconMap = {
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { orgId } = useWorkspace();
 
   return (
     <aside
@@ -83,6 +85,17 @@ export function Sidebar() {
           );
         })}
       </nav>
+
+      {orgId && (
+        <div className={cn("border-t px-3 py-2", collapsed && "px-2")}>
+          <div className="rounded-md bg-primary/10 px-2 py-1.5 text-center">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Org</p>
+            <p className="text-xs font-mono font-medium truncate">
+              {collapsed ? orgId.slice(0, 4) : orgId.slice(0, 8)}...
+            </p>
+          </div>
+        </div>
+      )}
 
       {collapsed && (
         <div className="p-3 border-t">
