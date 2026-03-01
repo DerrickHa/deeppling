@@ -199,4 +199,78 @@ export const registerOrgRoutes = (app: FastifyInstance, services: ServiceContain
         .map((instruction) => maskInstructionAmount(instruction, canView || (!!employee && instruction.payeeId === employee.id)))
     });
   });
+
+  app.get("/orgs/:id/treasury/status", async (request, reply) => {
+    const params = request.params as { id: string };
+    try {
+      const org = services.store.getOrg(params.id);
+      if (!org) {
+        return reply.code(404).send({ error: "ORG_NOT_FOUND" });
+      }
+
+      const unlink = services.unlink;
+      let burnerAddress: string | undefined;
+      let poolBalance: { tokenUnits: string; monWei: string } | undefined;
+
+      if (unlink.getBurnerAddress) {
+        burnerAddress = await unlink.getBurnerAddress();
+      }
+
+      if (org.treasury.accountId) {
+        const tokenAddress = org.treasury.tokenAddress ?? org.payrollPolicy?.tokenAddress ?? "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+        poolBalance = await unlink.getBalances(org.treasury.accountId, tokenAddress);
+      }
+
+      return reply.send({
+        treasuryAccountId: org.treasury.accountId,
+        treasuryStatus: org.treasury.status,
+        fundedTokenUnits: org.treasury.fundedTokenUnits,
+        fundedMonUnits: org.treasury.fundedMonUnits,
+        poolBalance,
+        burnerAddress,
+        faucetUrl: burnerAddress ? `https://faucet.monad.xyz` : undefined
+      });
+    } catch (error) {
+      const parsed = parseError(error);
+      return reply.code(parsed.statusCode).send({ error: parsed.message });
+    }
+  });
+
+  app.post("/orgs/:id/treasury/fund", async (request, reply) => {
+    const params = request.params as { id: string };
+    try {
+      const org = services.store.getOrg(params.id);
+      if (!org) {
+        return reply.code(404).send({ error: "ORG_NOT_FOUND" });
+      }
+
+      const body = request.body as { amount?: string; tokenAddress?: string } | undefined;
+      const unlink = services.unlink;
+
+      if (!unlink.depositFromBurner || !unlink.getBurnerAddress) {
+        return reply.code(400).send({
+          error: "MOCK_MODE",
+          message: "Treasury funding via burner is only available in real Unlink mode. Set USE_REAL_UNLINK=true."
+        });
+      }
+
+      const burnerAddress = await unlink.getBurnerAddress();
+      const tokenAddress = body?.tokenAddress ?? org.treasury.tokenAddress ?? "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
+      const amount = BigInt(body?.amount ?? "1000000000000000000"); // Default 1 MON
+
+      const relayId = await unlink.depositFromBurner(amount, tokenAddress);
+
+      return reply.send({
+        success: true,
+        relayId,
+        burnerAddress,
+        depositedAmount: amount.toString(),
+        tokenAddress,
+        message: "Deposit from burner into privacy pool confirmed."
+      });
+    } catch (error) {
+      const parsed = parseError(error);
+      return reply.code(parsed.statusCode).send({ error: parsed.message });
+    }
+  });
 };

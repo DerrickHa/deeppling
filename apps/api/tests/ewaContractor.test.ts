@@ -5,7 +5,7 @@ import { biweeklyNetEstimate } from "../src/lib/payrollMath.js";
 import { createServices } from "../src/services/container.js";
 
 const bootstrapOrgWithReadyEmployee = async () => {
-  const services = createServices();
+  const services = await createServices();
   const org = services.onboarding.createOrg({
     name: "Wage Labs",
     domain: "wage.test",

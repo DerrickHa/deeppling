@@ -4,7 +4,7 @@ import { getAdminProgress, getEmployeeProgress } from "../src/lib/onboardingProg
 import { createServices } from "../src/services/container.js";
 
 test("admin progress advances in sequence and requires review completion", async () => {
-  const services = createServices();
+  const services = await createServices();
   const org = services.onboarding.createOrg({
     name: "Flow Co",
     domain: "flow.test",
@@ -57,7 +57,7 @@ test("admin progress advances in sequence and requires review completion", async
 });
 
 test("employee progress tracks earliest incomplete step", async () => {
-  const services = createServices();
+  const services = await createServices();
   const org = services.onboarding.createOrg({
     name: "People Co",
     domain: "people.test",

@@ -63,7 +63,11 @@ Services throw errors with message prefixes like `BAD_REQUEST:`, `NOT_FOUND`, `U
 
 ### Service container and route wiring
 
-`apps/api/src/services/container.ts` — `createServices()` wires the `InMemoryStore`, adapters, and all domain services into a single `ServiceContainer`. Each route module exports a function `(app: FastifyInstance, services: ServiceContainer)` registered in `server.ts`. All state lives in the in-memory store (`apps/api/src/services/store.ts`) using `Map<string, T>` collections — no ORM or database yet.
+`apps/api/src/services/container.ts` — `createServices()` (async) wires the `InMemoryStore`, adapters, and all domain services into a single `ServiceContainer`. Toggles between `MockUnlinkAdapter` and `RealUnlinkAdapter` based on `USE_REAL_UNLINK`. Each route module exports a function `(app: FastifyInstance, services: ServiceContainer)` registered in `server.ts`. All state lives in the in-memory store (`apps/api/src/services/store.ts`) using `Map<string, T>` collections — no ORM or database yet.
+
+### Unlink adapters
+
+`MockUnlinkAdapter` in `unlinkService.ts` for development; `RealUnlinkAdapter` in `realUnlinkService.ts` for real private transfers on Monad testnet via `@unlink-xyz/node` SDK.
 
 ### Authentication
 
@@ -97,4 +101,17 @@ pnpm --filter @deeppling/api exec tsx --test tests/payroll.test.ts
 
 ## Environment Variables
 
-The API reads config from `apps/api/src/config.ts`. All variables have defaults suitable for local dev — no `.env` file is required to start.
+The API reads config from `apps/api/src/config.ts` with defaults suitable for local dev — no `.env` file is required to start:
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `4000` | API server port |
+| `MONAD_CHAIN_ID` | `10143` | Monad testnet chain ID |
+| `MONAD_RPC_URL` | `https://testnet-rpc.monad.xyz` | Monad RPC endpoint |
+| `PAYROLL_TOKEN_ADDRESS` | `0xEeee...EEeE` | Token contract for payroll (native MON) |
+| `MAX_RUN_AMOUNT_CENTS` | `1000000000` | Per-run cap (cents) |
+| `MAX_PAYOUT_AMOUNT_CENTS` | `100000000` | Per-employee cap (cents) |
+| `USE_REAL_UNLINK` | `false` | Toggle real Unlink SDK vs mock adapter |
+| `UNLINK_STORAGE_PATH` | `./data/unlink-wallet.db` | SQLite path for Unlink wallet state |
+| `UNLINK_POOL_ADDRESS` | `0x0813...a254` | Unlink pool contract on Monad testnet |
+| `CENTS_TO_WEI_FACTOR` | `100000000000000` | Conversion: 1 cent = 1e14 wei (0.01 MON = 100 cents) |

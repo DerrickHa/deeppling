@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { createServices } from "../src/services/container.js";
 
 const bootstrapOrg = async () => {
-  const services = createServices();
+  const services = await createServices();
   const org = services.onboarding.createOrg({
     name: "Acme Inc",
     domain: "acme.test",
@@ -155,7 +155,7 @@ test("duplicate execution does not create additional transfers", async () => {
 });
 
 test("execution halts on treasury preflight failures", async () => {
-  const services = createServices();
+  const services = await createServices();
   const org = services.onboarding.createOrg({
     name: "Insufficient Treasury",
     domain: "insufficient.test",
