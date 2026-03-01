@@ -2,23 +2,29 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, UserPlus, Banknote, Menu } from "lucide-react";
+import {
+  LayoutDashboard,
+  UserPlus,
+  Banknote,
+  Menu,
+  WalletCards,
+  Handshake,
+  ScrollText
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { navItems } from "@/lib/constants";
 
 const iconMap = {
   LayoutDashboard,
   UserPlus,
   Banknote,
+  WalletCards,
+  Handshake,
+  ScrollText
 } as const;
-
-const navItems = [
-  { label: "Overview", href: "/", icon: "LayoutDashboard" as const },
-  { label: "Onboarding", href: "/admin", icon: "UserPlus" as const },
-  { label: "Payroll", href: "/payroll", icon: "Banknote" as const },
-];
 
 export function MobileNav() {
   const pathname = usePathname();

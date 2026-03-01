@@ -40,6 +40,10 @@ export function TreasuryForm({ orgId, onUpdate, busy }: TreasuryFormProps) {
         `/orgs/${orgId}/treasury/setup`,
         {
           method: "POST",
+          actor: {
+            email: "finance@demo.local",
+            role: "FinanceApprover"
+          },
           body: JSON.stringify({
             tokenAddress: form.get("tokenAddress"),
             fundedTokenUnits: form.get("fundedTokenUnits"),

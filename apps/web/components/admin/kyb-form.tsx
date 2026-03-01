@@ -38,6 +38,10 @@ export function KybForm({ orgId, onUpdate, busy }: KybFormProps) {
     try {
       const updated = await apiRequest<OrgResponse>(`/orgs/${orgId}/kyb`, {
         method: "POST",
+        actor: {
+          email: "payroll-admin@demo.local",
+          role: "PayrollAdmin"
+        },
         body: JSON.stringify({
           legalEntityName: form.get("legalEntityName"),
           ein: form.get("ein"),

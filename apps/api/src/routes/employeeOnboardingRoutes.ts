@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { employmentSchema, identitySchema, signSchema, taxSchema } from "@deeppling/shared";
+import { getEmployeeProgress } from "../lib/onboardingProgress.js";
 import { parseBody, parseError } from "../lib/http.js";
 import type { ServiceContainer } from "../services/container.js";
 
@@ -9,12 +10,15 @@ export const registerEmployeeOnboardingRoutes = (app: FastifyInstance, services:
 
     try {
       const employee = services.onboarding.getEmployeeByInviteToken(params.token);
+      const progress = getEmployeeProgress(employee);
       return reply.send({
         employeeId: employee.id,
         email: employee.email,
         onboarding: employee.onboarding,
         readiness: employee.readiness,
-        inviteExpiresAt: employee.invite.expiresAt
+        inviteExpiresAt: employee.invite.expiresAt,
+        nextStep: progress.earliestIncompleteStep,
+        progress
       });
     } catch (error) {
       const parsed = parseError(error);
@@ -29,7 +33,12 @@ export const registerEmployeeOnboardingRoutes = (app: FastifyInstance, services:
       const payload = parseBody(identitySchema, request.body);
       const actor = request.headers["x-actor-email"]?.toString() ?? `invite:${params.token.slice(0, 8)}`;
       const employee = services.onboarding.updateIdentity(params.token, actor, payload);
-      return reply.send(employee);
+      const progress = getEmployeeProgress(employee);
+      return reply.send({
+        ...employee,
+        nextStep: progress.earliestIncompleteStep,
+        progress
+      });
     } catch (error) {
       const parsed = parseError(error);
       return reply.code(parsed.statusCode).send({ error: parsed.message });
@@ -43,7 +52,12 @@ export const registerEmployeeOnboardingRoutes = (app: FastifyInstance, services:
       const payload = parseBody(employmentSchema, request.body);
       const actor = request.headers["x-actor-email"]?.toString() ?? `invite:${params.token.slice(0, 8)}`;
       const employee = services.onboarding.updateEmployment(params.token, actor, payload);
-      return reply.send(employee);
+      const progress = getEmployeeProgress(employee);
+      return reply.send({
+        ...employee,
+        nextStep: progress.earliestIncompleteStep,
+        progress
+      });
     } catch (error) {
       const parsed = parseError(error);
       return reply.code(parsed.statusCode).send({ error: parsed.message });
@@ -57,7 +71,12 @@ export const registerEmployeeOnboardingRoutes = (app: FastifyInstance, services:
       const payload = parseBody(taxSchema, request.body);
       const actor = request.headers["x-actor-email"]?.toString() ?? `invite:${params.token.slice(0, 8)}`;
       const employee = services.onboarding.updateTax(params.token, actor, payload);
-      return reply.send(employee);
+      const progress = getEmployeeProgress(employee);
+      return reply.send({
+        ...employee,
+        nextStep: progress.earliestIncompleteStep,
+        progress
+      });
     } catch (error) {
       const parsed = parseError(error);
       return reply.code(parsed.statusCode).send({ error: parsed.message });
@@ -70,7 +89,12 @@ export const registerEmployeeOnboardingRoutes = (app: FastifyInstance, services:
     try {
       const actor = request.headers["x-actor-email"]?.toString() ?? `invite:${params.token.slice(0, 8)}`;
       const employee = await services.onboarding.provisionWallet(params.token, actor);
-      return reply.send(employee);
+      const progress = getEmployeeProgress(employee);
+      return reply.send({
+        ...employee,
+        nextStep: progress.earliestIncompleteStep,
+        progress
+      });
     } catch (error) {
       const parsed = parseError(error);
       return reply.code(parsed.statusCode).send({ error: parsed.message });
@@ -84,7 +108,12 @@ export const registerEmployeeOnboardingRoutes = (app: FastifyInstance, services:
       const payload = parseBody(signSchema, request.body);
       const actor = request.headers["x-actor-email"]?.toString() ?? `invite:${params.token.slice(0, 8)}`;
       const employee = services.onboarding.signDocuments(params.token, actor, payload);
-      return reply.send(employee);
+      const progress = getEmployeeProgress(employee);
+      return reply.send({
+        ...employee,
+        nextStep: progress.earliestIncompleteStep,
+        progress
+      });
     } catch (error) {
       const parsed = parseError(error);
       return reply.code(parsed.statusCode).send({ error: parsed.message });
@@ -97,7 +126,12 @@ export const registerEmployeeOnboardingRoutes = (app: FastifyInstance, services:
     try {
       const actor = request.headers["x-actor-email"]?.toString() ?? `invite:${params.token.slice(0, 8)}`;
       const employee = services.onboarding.submitOnboarding(params.token, actor);
-      return reply.send(employee);
+      const progress = getEmployeeProgress(employee);
+      return reply.send({
+        ...employee,
+        nextStep: progress.earliestIncompleteStep,
+        progress
+      });
     } catch (error) {
       const parsed = parseError(error);
       return reply.code(parsed.statusCode).send({ error: parsed.message });

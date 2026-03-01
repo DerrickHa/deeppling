@@ -7,7 +7,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { UserPlus, Shield, Brain, ArrowRight } from "lucide-react";
+import { UserPlus, Shield, Brain, ArrowRight, WalletCards, Handshake } from "lucide-react";
 
 const features = [
   {
@@ -24,26 +24,50 @@ const features = [
   },
   {
     icon: Shield,
-    title: "Resilient Execution",
+    title: "Monad + Unlink Rail",
     description:
-      "AI-powered risk flags, finance approval gates, idempotent payout keys, and automatic circuit breaker protection.",
+      "All payroll, EWA, and contractor payouts execute through Unlink on Monad with preflight checks and deterministic receipts.",
     items: [
-      "AI risk flag proposals",
-      "Finance approval gates",
-      "Idempotent execution",
-      "Circuit breaker failsafe",
+      "Monad treasury preflight",
+      "Unlink transfer execution",
+      "Idempotency on every payout",
+      "Circuit breaker protection",
     ],
   },
   {
     icon: Brain,
-    title: "AI Compliance",
+    title: "Private Attestations",
     description:
-      "Autonomous risk analysis with SHA-256 hashed audit trails and deterministic decision logs for full transparency.",
+      "Critical workflow events are hash-anchored on-chain while compensation amounts stay private by default.",
     items: [
-      "Autonomous risk analysis",
-      "SHA-256 audit hashing",
-      "Decision log trail",
-      "Deterministic outputs",
+      "Hash-only chain anchors",
+      "Need-to-know amount visibility",
+      "Signature attestations",
+      "Auditable decision trails",
+    ],
+  },
+  {
+    icon: WalletCards,
+    title: "Earned Pay Access",
+    description:
+      "Salaried employees can request prorated withdrawals with replay-safe signatures and instant settlement.",
+    items: [
+      "Biweekly accrual engine",
+      "100% accrued cap support",
+      "Immediate payout settlement",
+      "Payroll netting at close",
+    ],
+  },
+  {
+    icon: Handshake,
+    title: "Contractor Co-Sign",
+    description:
+      "Contractor and employer signatures drive submit, dispute, resolve, and approval flow with immediate pay on approval.",
+    items: [
+      "Timesheet handshake model",
+      "Dispute locks payment",
+      "Approval triggers payout",
+      "Monad anchor per transition",
     ],
   },
 ] as const;
@@ -66,6 +90,12 @@ export default function HomePage() {
             </Button>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/payroll">Payroll</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/earned-pay">Earned Pay</Link>
+            </Button>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/contractors">Contractors</Link>
             </Button>
           </nav>
         </div>
@@ -101,7 +131,7 @@ export default function HomePage() {
 
       {/* ── Feature Cards ───────────────────────────────────────── */}
       <section className="mx-auto max-w-6xl px-6 pb-24">
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
           {features.map(({ icon: Icon, title, description, items }) => (
             <Card
               key={title}

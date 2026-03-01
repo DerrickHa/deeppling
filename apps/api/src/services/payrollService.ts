@@ -2,20 +2,13 @@ import crypto from "node:crypto";
 import { analyzePayrollRun } from "@deeppling/agent";
 import type { Org, PayrollRun, PayoutInstruction } from "@deeppling/shared";
 import { executeInstructions } from "@deeppling/worker";
+import { getBiweeklyPeriod, todayIsoDate } from "../lib/biweekly.js";
 import { nowIso } from "../lib/date.js";
 import { sha256 } from "../lib/hash.js";
+import { biweeklyNetEstimate } from "../lib/payrollMath.js";
 import { MonadPreflightService } from "./monadService.js";
 import { InMemoryStore } from "./store.js";
 import type { UnlinkAdapter } from "./unlinkService.js";
-
-const monthlyGrossFromAnnual = (annualSalaryCents: number): number => Math.floor(annualSalaryCents / 12);
-
-const monthlyNetEstimate = (annualSalaryCents: number, extraWithholdingCents = 0): number => {
-  const gross = monthlyGrossFromAnnual(annualSalaryCents);
-  const estimatedTax = Math.floor(gross * 0.22);
-  const net = gross - estimatedTax - extraWithholdingCents;
-  return Math.max(0, net);
-};
 
 export class PayrollService {
   private readonly monadPreflight = new MonadPreflightService();
@@ -62,7 +55,27 @@ export class PayrollService {
     }
   }
 
-  previewPayroll(input: { orgId: string; periodStart: string; periodEnd: string }): {
+  private resolvePeriod(org: Org, input: { periodStart?: string; periodEnd?: string; asOf?: string }): {
+    periodStart: string;
+    periodEnd: string;
+  } {
+    if (input.periodStart && input.periodEnd) {
+      return {
+        periodStart: input.periodStart,
+        periodEnd: input.periodEnd
+      };
+    }
+
+    const policy = org.payrollPolicy;
+    if (!policy) {
+      throw new Error("POLICY_REQUIRED");
+    }
+
+    const asOf = input.asOf ?? todayIsoDate();
+    return getBiweeklyPeriod(policy.anchorFriday, asOf);
+  }
+
+  previewPayroll(input: { orgId: string; periodStart?: string; periodEnd?: string; asOf?: string }): {
     run: PayrollRun;
     instructions: PayoutInstruction[];
   } {
@@ -74,22 +87,42 @@ export class PayrollService {
       throw new Error("POLICY_REQUIRED");
     }
 
+    const period = this.resolvePeriod(org, input);
+
     const readyEmployees = this.store
       .listOrgEmployees(org.id)
       .filter((employee) => employee.readiness === "READY" && employee.unlinkAccountId && employee.annualSalaryCents);
 
     const instructions: PayoutInstruction[] = readyEmployees.map((employee) => {
-      const amountCents = monthlyNetEstimate(employee.annualSalaryCents ?? 0, employee.taxProfile?.extraWithholdingCents);
+      const estimatedPeriodNetCents = biweeklyNetEstimate(
+        employee.annualSalaryCents ?? 0,
+        employee.taxProfile?.extraWithholdingCents
+      );
+
+      const confirmedWithdrawalsCents = this.store
+        .listEmployeeEarnedWageWithdrawalsByPeriod(employee.id, period.periodStart, period.periodEnd)
+        .filter((withdrawal) => withdrawal.status === "CONFIRMED")
+        .reduce((sum, withdrawal) => sum + withdrawal.amountCents, 0);
+
+      const amountCents = Math.max(0, estimatedPeriodNetCents - confirmedWithdrawalsCents);
 
       return {
         id: crypto.randomUUID(),
         runId: "",
         orgId: org.id,
+        payeeType: "EMPLOYEE_PAYROLL",
+        payeeId: employee.id,
         employeeId: employee.id,
         unlinkAccountId: employee.unlinkAccountId ?? "",
         amountCents,
         tokenAddress: policy.tokenAddress,
-        idempotencyKey: sha256({ orgId: org.id, employeeId: employee.id, periodStart: input.periodStart, periodEnd: input.periodEnd }),
+        idempotencyKey: sha256({
+          orgId: org.id,
+          employeeId: employee.id,
+          payeeType: "EMPLOYEE_PAYROLL",
+          periodStart: period.periodStart,
+          periodEnd: period.periodEnd
+        }),
         status: "PENDING",
         attempts: 0,
         updatedAt: nowIso()
@@ -98,10 +131,11 @@ export class PayrollService {
 
     const manifestHash = sha256({
       orgId: org.id,
-      periodStart: input.periodStart,
-      periodEnd: input.periodEnd,
-      employees: instructions.map((instruction) => ({
-        employeeId: instruction.employeeId,
+      periodStart: period.periodStart,
+      periodEnd: period.periodEnd,
+      payees: instructions.map((instruction) => ({
+        payeeId: instruction.payeeId,
+        payeeType: instruction.payeeType,
         amountCents: instruction.amountCents,
         unlinkAccountId: instruction.unlinkAccountId
       }))
@@ -115,8 +149,8 @@ export class PayrollService {
     const run: PayrollRun = {
       id: runId,
       orgId: org.id,
-      periodStart: input.periodStart,
-      periodEnd: input.periodEnd,
+      periodStart: period.periodStart,
+      periodEnd: period.periodEnd,
       status: "DRAFT",
       manifestHash,
       tokenAddress: policy.tokenAddress,
@@ -131,6 +165,8 @@ export class PayrollService {
 
     this.pushAudit(org.id, "payroll-admin", "PAYROLL_PREVIEW_CREATED", {
       runId: run.id,
+      periodStart: run.periodStart,
+      periodEnd: run.periodEnd,
       employeeCount: run.employeeCount,
       totalAmountCents: run.totalAmountCents
     });
@@ -397,6 +433,7 @@ export class PayrollService {
         annualSalaryCents: 120_000_00 + idx * 100,
         startDate: "2025-01-01",
         unlinkAccountId: `unlink_seeded_${idx}`,
+        walletAddress: `0xseeded${idx.toString(16).padStart(34, "0")}`,
         onboarding: {
           identity: "COMPLETED",
           employment: "COMPLETED",

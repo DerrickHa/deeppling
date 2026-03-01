@@ -85,7 +85,7 @@ export const analyzePayrollRun = (
         code: "INDIVIDUAL_CAP_EXCEEDED",
         severity: "high",
         message: `Instruction ${instruction.id} exceeds per-employee cap.`,
-        employeeId: instruction.employeeId
+        employeeId: instruction.employeeId ?? instruction.payeeId
       });
     }
   }

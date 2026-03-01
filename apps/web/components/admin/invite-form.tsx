@@ -28,6 +28,10 @@ export function InviteForm({ orgId, busy }: InviteFormProps) {
         `/orgs/${orgId}/employees/invite`,
         {
           method: "POST",
+          actor: {
+            email: "payroll-admin@demo.local",
+            role: "PayrollAdmin"
+          },
           body: JSON.stringify({ email: form.get("email") }),
         }
       );

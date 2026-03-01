@@ -29,10 +29,12 @@ const bootstrapOrg = async () => {
   });
 
   services.onboarding.setPayrollPolicy(org.id, org.adminEmail, {
-    schedule: "MONTHLY",
-    cutoffDay: 25,
-    payoutDay: 1,
+    schedule: "BIWEEKLY_FRIDAY",
+    anchorFriday: "2026-02-27",
+    timezone: "America/New_York",
     tokenAddress: "0xtoken",
+    ewaEnabled: true,
+    ewaMaxAccrualPercent: 100,
     maxRunAmount: "1000000000",
     maxPayoutAmount: "100000000",
     approvedTokens: ["0xtoken"]
@@ -179,10 +181,12 @@ test("execution halts on treasury preflight failures", async () => {
   });
 
   services.onboarding.setPayrollPolicy(org.id, org.adminEmail, {
-    schedule: "MONTHLY",
-    cutoffDay: 25,
-    payoutDay: 1,
+    schedule: "BIWEEKLY_FRIDAY",
+    anchorFriday: "2026-02-27",
+    timezone: "America/New_York",
     tokenAddress: "0xtoken",
+    ewaEnabled: true,
+    ewaMaxAccrualPercent: 100,
     maxRunAmount: "1000000000",
     maxPayoutAmount: "100000000",
     approvedTokens: ["0xtoken"]

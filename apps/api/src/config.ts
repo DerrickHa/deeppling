@@ -4,6 +4,10 @@ export interface AppConfig {
   port: number;
   monadChainId: number;
   monadRpcUrl: string;
+  authSecret: string;
+  sessionTtlHours: number;
+  ewaEnabled: boolean;
+  contractorEnabled: boolean;
   linksProtocolPoolAddress: string;
   proverUrl?: string;
   relayerUrl?: string;
@@ -17,6 +21,10 @@ export const config: AppConfig = {
   port: Number(process.env.PORT ?? 4000),
   monadChainId: Number(process.env.MONAD_CHAIN_ID ?? 10143),
   monadRpcUrl: process.env.MONAD_RPC_URL ?? "https://testnet-rpc.monad.xyz",
+  authSecret: process.env.AUTH_SECRET ?? "deeppling-dev-secret",
+  sessionTtlHours: Number(process.env.SESSION_TTL_HOURS ?? 12),
+  ewaEnabled: process.env.EWA_ENABLED ? process.env.EWA_ENABLED === "true" : true,
+  contractorEnabled: process.env.CONTRACTOR_ENABLED ? process.env.CONTRACTOR_ENABLED === "true" : true,
   linksProtocolPoolAddress: process.env.LINKS_PROTOCOL_POOL_ADDRESS ?? "0x0000000000000000000000000000000000000001",
   proverUrl: process.env.UNLINK_PROVER_URL,
   relayerUrl: process.env.UNLINK_RELAYER_URL,

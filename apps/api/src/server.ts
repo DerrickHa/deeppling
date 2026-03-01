@@ -1,5 +1,8 @@
 import Fastify from "fastify";
 import { config } from "./config.js";
+import { registerAuthRoutes } from "./routes/authRoutes.js";
+import { registerContractorRoutes } from "./routes/contractorRoutes.js";
+import { registerEarnedWageRoutes } from "./routes/earnedWageRoutes.js";
 import { registerEmployeeOnboardingRoutes } from "./routes/employeeOnboardingRoutes.js";
 import { registerOrgRoutes } from "./routes/orgRoutes.js";
 import { registerPayrollRoutes } from "./routes/payrollRoutes.js";
@@ -26,6 +29,9 @@ app.get("/health", async () => ({
 registerOrgRoutes(app, services);
 registerEmployeeOnboardingRoutes(app, services);
 registerPayrollRoutes(app, services);
+registerAuthRoutes(app, services);
+registerEarnedWageRoutes(app, services);
+registerContractorRoutes(app, services);
 
 const start = async (): Promise<void> => {
   try {

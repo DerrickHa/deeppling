@@ -19,6 +19,17 @@ Rippling/Deel-style onboarding + autonomous payroll system for Unlink x Monad ha
   - agent proposal
   - finance approval
   - execution with retries + circuit breaker
+- Biweekly payroll policy (`BIWEEKLY_FRIDAY`) with deterministic pay periods.
+- Earned wage access (EWA):
+  - accrued availability
+  - signed withdrawal request
+  - immediate payout via Unlink on Monad
+  - payroll-period netting to prevent double payment
+- Contractor handshake:
+  - signed timesheet submit
+  - employer dispute / contractor resolve
+  - signed approval with immediate payout
+  - chain anchoring for state transitions
 - Idempotent payout instructions to prevent duplicate payouts.
 - Audit trail and agent decision logs.
 
@@ -45,6 +56,8 @@ cp apps/api/.env.example apps/api/.env
 cp apps/web/.env.local.example apps/web/.env.local
 ```
 
+Set `NEXT_PUBLIC_ONBOARDING_V2=true` (default in example) for the step-through onboarding routes.
+
 3. Start API and web:
 
 ```bash
@@ -64,6 +77,8 @@ pnpm dev
 - `POST /orgs/:id/payroll-policy`
 - `POST /orgs/:id/employees/invite`
 - `GET /onboarding/checklist?orgId=...`
+- `GET /orgs/:id/onboarding-progress`
+- `POST /orgs/:id/onboarding/review`
 
 ### Employee onboarding
 
@@ -83,6 +98,30 @@ pnpm dev
 - `POST /payroll-runs/:id/execute`
 - `GET /payroll-runs/:id`
 
+### Auth + wallet
+
+- `POST /auth/login`
+- `POST /auth/wallet/challenge`
+- `POST /auth/wallet/verify`
+- `GET /auth/me`
+
+### Earned wage access
+
+- `GET /employees/me/earned-wages?orgId=...&employeeId=...&asOf=YYYY-MM-DD`
+- `POST /employees/me/earned-wages/withdrawals?orgId=...`
+- `GET /employees/me/earned-wages/withdrawals?orgId=...&employeeId=...`
+
+### Contractors
+
+- `POST /orgs/:orgId/contractors`
+- `GET /orgs/:orgId/contractors`
+- `POST /contractors/:id/timesheets`
+- `POST /timesheets/:id/dispute`
+- `POST /timesheets/:id/resolve`
+- `POST /timesheets/:id/approve`
+- `GET /timesheets/:id`
+- `GET /orgs/:orgId/timesheets`
+
 ### Extra demo helpers
 
 - `POST /orgs/:id/seed-employees`
@@ -92,7 +131,7 @@ pnpm dev
 ## Demo script
 
 1. Go to `/admin` and run steps 1-5.
-2. Open generated employee invite link from step 5 and complete onboarding.
+2. Open generated employee invite link and complete step-through employee onboarding.
 3. Back on `/admin`, refresh checklist and run AI onboarding risk scan.
 4. Go to `/payroll`, paste Org ID, seed employees, create preview, run proposal, approve, and execute.
 5. Inspect run status, receipts, and breaker outcomes.
@@ -101,7 +140,8 @@ pnpm dev
 
 - Current implementation ships with a mock Unlink adapter (`apps/api/src/services/unlinkService.ts`) so the full UX and control plane can be demoed without external credentials.
 - Adapter interface is aligned to required operations (`createAccount`, `createMultisig`, `getBalances`, `send`, `waitForConfirmation`) so replacing with real SDK calls is localized.
-- Monad preflight checks enforce token and MON reserve thresholds before execution.
+- Monad preflight checks enforce token and MON reserve thresholds before payroll, EWA, and contractor payout execution.
+- Critical signature actions are hash-anchored through the chain anchor service (Monadic tx hash simulation in this repo).
 
 ## Testing
 
