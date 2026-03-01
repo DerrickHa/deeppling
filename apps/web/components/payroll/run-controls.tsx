@@ -38,7 +38,7 @@ export function RunControls({
       <CardHeader>
         <CardTitle>Run Setup</CardTitle>
         <CardDescription>
-          Configure organization and create a payroll preview
+          Configure organization and create a biweekly payroll preview
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -78,7 +78,7 @@ export function RunControls({
                 id="periodStart"
                 name="periodStart"
                 type="date"
-                defaultValue="2026-02-01"
+                defaultValue="2026-02-14"
                 required
               />
             </div>
@@ -88,7 +88,7 @@ export function RunControls({
                 id="periodEnd"
                 name="periodEnd"
                 type="date"
-                defaultValue="2026-02-28"
+                defaultValue="2026-02-27"
                 required
               />
             </div>

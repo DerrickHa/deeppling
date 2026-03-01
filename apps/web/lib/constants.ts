@@ -14,10 +14,15 @@ export const statusColors = {
   PARTIAL_FAILURE: "destructive",
   HALTED: "destructive",
   PENDING: "secondary",
+  REQUESTED: "secondary",
   SUBMITTED: "outline",
   CONFIRMED: "default",
   FAILED: "destructive",
   SKIPPED: "secondary",
+  DISPUTED: "destructive",
+  RESUBMITTED: "outline",
+  PAID: "default",
+  PAYOUT_FAILED: "destructive",
   REJECTED: "destructive",
 } as const;
 
@@ -35,4 +40,7 @@ export const navItems = [
   { label: "Overview", href: "/", icon: "LayoutDashboard" as const },
   { label: "Onboarding", href: "/admin", icon: "UserPlus" as const },
   { label: "Payroll", href: "/payroll", icon: "Banknote" as const },
+  { label: "Earned Pay", href: "/earned-pay", icon: "WalletCards" as const },
+  { label: "Contractors", href: "/contractors", icon: "Handshake" as const },
+  { label: "Audit", href: "/audit", icon: "ScrollText" as const },
 ] as const;

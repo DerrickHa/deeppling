@@ -26,10 +26,15 @@ const statusConfig: Record<string, { label: string; variant: BadgeVariant; icon:
   PARTIAL_FAILURE: { label: "Partial Failure", variant: "destructive", icon: AlertCircle },
   HALTED: { label: "Halted", variant: "destructive", icon: XCircle },
   PENDING: { label: "Pending", variant: "secondary", icon: Clock },
+  REQUESTED: { label: "Requested", variant: "secondary", icon: Clock },
   SUBMITTED: { label: "Submitted", variant: "outline", icon: Clock },
   CONFIRMED: { label: "Confirmed", variant: "default", icon: CheckCircle2 },
   FAILED: { label: "Failed", variant: "destructive", icon: XCircle },
   SKIPPED: { label: "Skipped", variant: "secondary", icon: Clock },
+  DISPUTED: { label: "Disputed", variant: "destructive", icon: AlertCircle },
+  RESUBMITTED: { label: "Resubmitted", variant: "outline", icon: Clock },
+  PAID: { label: "Paid", variant: "default", icon: CheckCircle2 },
+  PAYOUT_FAILED: { label: "Payout Failed", variant: "destructive", icon: XCircle },
   REJECTED: { label: "Rejected", variant: "destructive", icon: XCircle },
 };
 

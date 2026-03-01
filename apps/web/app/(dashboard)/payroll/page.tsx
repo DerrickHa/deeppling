@@ -32,8 +32,10 @@ interface RunPayload {
 
 interface InstructionPayload {
   id: string;
-  employeeId: string;
+  payeeId: string;
+  payeeType: string;
   amountCents: number;
+  maskedAmount?: boolean;
   status: string;
   txHash?: string;
   errorCode?: string;
@@ -42,6 +44,7 @@ interface InstructionPayload {
 interface RunResponse {
   run: RunPayload;
   instructions: InstructionPayload[];
+  canViewAmounts?: boolean;
   breaker?: {
     halted: boolean;
     reason?: string;
@@ -85,6 +88,10 @@ export default function PayrollPage() {
       }>("/payroll-runs/preview", {
         method: "POST",
         body: JSON.stringify({ orgId, periodStart, periodEnd }),
+        actor: {
+          email: "payroll@demo.local",
+          role: "PayrollAdmin"
+        }
       });
 
       setRunId(payload.run.id);
@@ -99,6 +106,10 @@ export default function PayrollPage() {
       await apiRequest(`/orgs/${orgId}/seed-employees`, {
         method: "POST",
         body: JSON.stringify({ count: 100 }),
+        actor: {
+          email: "payroll@demo.local",
+          role: "PayrollAdmin"
+        }
       });
       toast.success("100 employees seeded");
     });
@@ -108,10 +119,22 @@ export default function PayrollPage() {
     await guard("agent-proposal", async () => {
       const response = await apiRequest<{ run: RunPayload; flags: RiskFlag[] }>(
         `/payroll-runs/${runId}/agent-proposal`,
-        { method: "POST", body: JSON.stringify({}) }
+        {
+          method: "POST",
+          body: JSON.stringify({}),
+          actor: {
+            email: "finance@demo.local",
+            role: "FinanceApprover"
+          }
+        }
       );
       setFlags(response.flags);
-      const latest = await apiRequest<RunResponse>(`/payroll-runs/${runId}`);
+      const latest = await apiRequest<RunResponse>(`/payroll-runs/${runId}`, {
+        actor: {
+          email: "finance@demo.local",
+          role: "FinanceApprover"
+        }
+      });
       setRunResponse(latest);
       toast.success("Agent proposal complete");
     });
@@ -125,8 +148,17 @@ export default function PayrollPage() {
           approver: "finance@demo.local",
           role: "FinanceApprover",
         }),
+        actor: {
+          email: "finance@demo.local",
+          role: "FinanceApprover"
+        }
       });
-      const latest = await apiRequest<RunResponse>(`/payroll-runs/${runId}`);
+      const latest = await apiRequest<RunResponse>(`/payroll-runs/${runId}`, {
+        actor: {
+          email: "finance@demo.local",
+          role: "FinanceApprover"
+        }
+      });
       setRunResponse(latest);
       toast.success("Run approved");
     });
@@ -140,8 +172,17 @@ export default function PayrollPage() {
           requestedBy: "finance@demo.local",
           forceFailureRate,
         }),
+        actor: {
+          email: "finance@demo.local",
+          role: "FinanceApprover"
+        }
       });
-      const latest = await apiRequest<RunResponse>(`/payroll-runs/${runId}`);
+      const latest = await apiRequest<RunResponse>(`/payroll-runs/${runId}`, {
+        actor: {
+          email: "finance@demo.local",
+          role: "FinanceApprover"
+        }
+      });
       setRunResponse(latest);
       toast.success("Execution complete");
     });

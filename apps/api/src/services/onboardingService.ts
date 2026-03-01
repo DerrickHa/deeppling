@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import { analyzeOnboardingRisks } from "@deeppling/agent";
-import type { Employee, OnboardingStepStatus, Org } from "@deeppling/shared";
+import type { AuthUser, Employee, OnboardingStepStatus, Org, Role } from "@deeppling/shared";
 import { addHours, nowIso } from "../lib/date.js";
 import { InMemoryStore } from "./store.js";
 import type { UnlinkAdapter } from "./unlinkService.js";
@@ -22,6 +22,36 @@ export class OnboardingService {
     });
   }
 
+  private ensureUser(email: string): AuthUser {
+    const existing = this.store.getUserByEmail(email);
+    if (existing) {
+      return existing;
+    }
+
+    const timestamp = nowIso();
+    const user: AuthUser = {
+      id: crypto.randomUUID(),
+      email,
+      displayName: email.split("@")[0] ?? email,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+
+    this.store.upsertUserByEmail(user);
+    return user;
+  }
+
+  private assignRole(email: string, orgId: string, role: Role): void {
+    const user = this.ensureUser(email);
+    this.store.upsertRoleAssignment({
+      id: crypto.randomUUID(),
+      userId: user.id,
+      orgId,
+      role,
+      createdAt: nowIso()
+    });
+  }
+
   createOrg(input: { name: string; domain: string; adminEmail: string }): Org {
     const timestamp = nowIso();
     const org: Org = {
@@ -29,6 +59,7 @@ export class OnboardingService {
       name: input.name,
       domain: input.domain,
       adminEmail: input.adminEmail,
+      onboardingReviewCompleted: false,
       kybStatus: "NOT_STARTED",
       treasury: {
         fundedTokenUnits: "0",
@@ -42,6 +73,10 @@ export class OnboardingService {
     };
 
     this.store.insertOrg(org);
+    this.assignRole(input.adminEmail, org.id, "OrgOwner");
+    this.assignRole(input.adminEmail, org.id, "PayrollAdmin");
+    this.assignRole(input.adminEmail, org.id, "FinanceApprover");
+    this.assignRole(input.adminEmail, org.id, "Auditor");
     this.pushAudit(org.id, input.adminEmail, "ORG_CREATED", { name: input.name, domain: input.domain });
     return org;
   }
@@ -80,6 +115,8 @@ export class OnboardingService {
     } else {
       org.kybStatus = input.submitForReview ? "PENDING_REVIEW" : "NOT_STARTED";
     }
+
+    org.onboardingReviewCompleted = false;
 
     this.store.updateOrg(org);
     this.pushAudit(orgId, actor, "KYB_UPDATED", {
@@ -125,6 +162,7 @@ export class OnboardingService {
       BigInt(input.fundedMonUnits) >= BigInt(input.minMonThreshold);
 
     org.treasury.status = fundedEnough ? "COMPLETED" : "BLOCKED";
+    org.onboardingReviewCompleted = false;
 
     const adapter = this.unlink as { credit?: (accountId: string, tokenUnits: bigint, monWei: bigint) => void };
     if (adapter.credit) {
@@ -146,10 +184,12 @@ export class OnboardingService {
     orgId: string,
     actor: string,
     input: {
-      schedule: "MONTHLY";
-      cutoffDay: number;
-      payoutDay: number;
+      schedule: "BIWEEKLY_FRIDAY";
+      anchorFriday: string;
+      timezone: string;
       tokenAddress: string;
+      ewaEnabled: boolean;
+      ewaMaxAccrualPercent: number;
       maxRunAmount: string;
       maxPayoutAmount: string;
       approvedTokens: string[];
@@ -165,9 +205,33 @@ export class OnboardingService {
       ...input,
       status: "COMPLETED"
     };
+    org.onboardingReviewCompleted = false;
 
     this.store.updateOrg(org);
     this.pushAudit(orgId, actor, "PAYROLL_POLICY_SET", input);
+
+    return org;
+  }
+
+  completeAdminReview(orgId: string, actor: string): Org {
+    const org = this.store.getOrg(orgId);
+    if (!org) {
+      throw new Error("ORG_NOT_FOUND");
+    }
+
+    const checklist = this.store.getChecklist(orgId);
+    const readyForReview = checklist.companyVerified && checklist.treasuryFunded && checklist.policyActive && checklist.employeesInvited > 0;
+
+    if (!readyForReview) {
+      throw new Error("ORG_NOT_READY_FOR_REVIEW_COMPLETE");
+    }
+
+    org.onboardingReviewCompleted = true;
+    this.store.updateOrg(org);
+
+    this.pushAudit(orgId, actor, "ADMIN_ONBOARDING_REVIEW_COMPLETED", {
+      employeesInvited: checklist.employeesInvited
+    });
 
     return org;
   }
@@ -203,6 +267,9 @@ export class OnboardingService {
     };
 
     this.store.insertEmployee(employee);
+    this.assignRole(email, org.id, "Employee");
+    org.onboardingReviewCompleted = false;
+    this.store.updateOrg(org);
     this.pushAudit(orgId, actor, "EMPLOYEE_INVITED", {
       employeeId: employee.id,
       email,
@@ -220,10 +287,6 @@ export class OnboardingService {
       throw new Error("INVITE_NOT_FOUND");
     }
 
-    if (employee.invite.consumed) {
-      throw new Error("INVITE_ALREADY_USED");
-    }
-
     if (new Date(employee.invite.expiresAt).getTime() < Date.now()) {
       throw new Error("INVITE_EXPIRED");
     }
@@ -233,6 +296,10 @@ export class OnboardingService {
 
   private setStep(employee: Employee, step: keyof Employee["onboarding"], status: OnboardingStepStatus): Employee {
     employee.onboarding[step] = status;
+    if (step !== "review") {
+      employee.onboarding.review = "IN_PROGRESS";
+      employee.readiness = "NOT_READY";
+    }
     employee.updatedAt = nowIso();
     return this.store.updateEmployee(employee);
   }

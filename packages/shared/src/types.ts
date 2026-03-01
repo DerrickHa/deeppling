@@ -26,7 +26,17 @@ export type PayrollRunStatus = (typeof payrollRunStatuses)[number];
 export const kybStatuses = ["NOT_STARTED", "PENDING_REVIEW", "COMPLETED", "REJECTED"] as const;
 export type KybStatus = (typeof kybStatuses)[number];
 
-export const roles = ["OrgOwner", "PayrollAdmin", "FinanceApprover", "Auditor"] as const;
+export const payrollSchedules = ["BIWEEKLY_FRIDAY"] as const;
+export type PayrollSchedule = (typeof payrollSchedules)[number];
+
+export const roles = [
+  "OrgOwner",
+  "PayrollAdmin",
+  "FinanceApprover",
+  "Auditor",
+  "Employee",
+  "Contractor"
+] as const;
 export type Role = (typeof roles)[number];
 
 export const onboardingSteps = [
@@ -38,6 +48,37 @@ export const onboardingSteps = [
   "review"
 ] as const;
 export type OnboardingStep = (typeof onboardingSteps)[number];
+
+export const adminOnboardingSteps = [
+  "start",
+  "kyb",
+  "treasury",
+  "policy",
+  "invite",
+  "review",
+  "complete"
+] as const;
+export type AdminOnboardingStep = (typeof adminOnboardingSteps)[number];
+
+export const employeeOnboardingSteps = [
+  "identity",
+  "employment",
+  "tax",
+  "wallet",
+  "documents",
+  "review",
+  "complete"
+] as const;
+export type EmployeeOnboardingStep = (typeof employeeOnboardingSteps)[number];
+
+export interface WizardProgressPayload<S extends string = string> {
+  currentStep: S;
+  earliestIncompleteStep: S;
+  completedSteps: S[];
+  canProceed: boolean;
+  blockers: string[];
+  nextStep?: S;
+}
 
 export interface AuditEvent {
   id: string;
@@ -53,6 +94,7 @@ export interface Org {
   name: string;
   domain: string;
   adminEmail: string;
+  onboardingReviewCompleted?: boolean;
   kybStatus: KybStatus;
   kybDetails?: {
     legalEntityName: string;
@@ -72,10 +114,12 @@ export interface Org {
     status: OnboardingStepStatus;
   };
   payrollPolicy?: {
-    schedule: "MONTHLY";
-    cutoffDay: number;
-    payoutDay: number;
+    schedule: PayrollSchedule;
+    anchorFriday: string;
+    timezone: string;
     tokenAddress: string;
+    ewaEnabled: boolean;
+    ewaMaxAccrualPercent: number;
     maxRunAmount: string;
     maxPayoutAmount: string;
     approvedTokens: string[];
@@ -95,6 +139,7 @@ export interface Employee {
   annualSalaryCents?: number;
   startDate?: string;
   unlinkAccountId?: string;
+  walletAddress?: string;
   onboarding: Record<OnboardingStep, OnboardingStepStatus>;
   taxProfile?: {
     filingStatus?: string;
@@ -117,6 +162,38 @@ export interface Employee {
   updatedAt: string;
 }
 
+export interface AuthUser {
+  id: string;
+  email: string;
+  displayName: string;
+  walletAddress?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Session {
+  id: string;
+  userId: string;
+  token: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RoleAssignment {
+  id: string;
+  userId: string;
+  orgId: string;
+  role: Role;
+  createdAt: string;
+}
+
+export interface WalletChallenge {
+  walletAddress: string;
+  nonce: string;
+  expiresAt: string;
+}
+
 export interface RiskFlag {
   code: string;
   severity: "low" | "medium" | "high";
@@ -136,16 +213,24 @@ export interface AgentDecisionLog {
   createdAt: string;
 }
 
+export const payoutInstructionStatuses = ["PENDING", "SUBMITTED", "CONFIRMED", "FAILED", "SKIPPED"] as const;
+export type PayoutInstructionStatus = (typeof payoutInstructionStatuses)[number];
+
+export const payoutPayeeTypes = ["EMPLOYEE_PAYROLL", "EMPLOYEE_EWA", "CONTRACTOR"] as const;
+export type PayoutPayeeType = (typeof payoutPayeeTypes)[number];
+
 export interface PayoutInstruction {
   id: string;
-  runId: string;
+  runId?: string;
   orgId: string;
-  employeeId: string;
+  payeeType: PayoutPayeeType;
+  payeeId: string;
+  employeeId?: string;
   unlinkAccountId: string;
   amountCents: number;
   tokenAddress: string;
   idempotencyKey: string;
-  status: "PENDING" | "SUBMITTED" | "CONFIRMED" | "FAILED" | "SKIPPED";
+  status: PayoutInstructionStatus;
   txHash?: string;
   errorCode?: string;
   attempts: number;
@@ -194,4 +279,142 @@ export interface ChecklistSummary {
   employeesReady: number;
   employeesInvited: number;
   blockers: string[];
+}
+
+export const earnedWageWithdrawalStatuses = [
+  "REQUESTED",
+  "SUBMITTED",
+  "CONFIRMED",
+  "FAILED",
+  "CANCELLED"
+] as const;
+export type EarnedWageWithdrawalStatus = (typeof earnedWageWithdrawalStatuses)[number];
+
+export interface EarnedWageLedgerPeriod {
+  id: string;
+  orgId: string;
+  employeeId: string;
+  periodStart: string;
+  periodEnd: string;
+  estimatedNetPeriodCents: number;
+  withdrawnConfirmedCents: number;
+  withdrawnPendingCents: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EarnedWageWithdrawal {
+  id: string;
+  orgId: string;
+  employeeId: string;
+  periodStart: string;
+  periodEnd: string;
+  amountCents: number;
+  status: EarnedWageWithdrawalStatus;
+  requestPayloadHash: string;
+  requestSignature: string;
+  requestNonce: string;
+  requestDeadline: string;
+  txHash?: string;
+  errorCode?: string;
+  payoutInstructionId?: string;
+  anchorTxHash?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const contractorStatuses = ["ACTIVE", "PAUSED"] as const;
+export type ContractorStatus = (typeof contractorStatuses)[number];
+
+export interface ContractorProfile {
+  id: string;
+  orgId: string;
+  email: string;
+  fullName: string;
+  walletAddress: string;
+  unlinkAccountId: string;
+  hourlyRateCents: number;
+  status: ContractorStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const contractorTimesheetStatuses = [
+  "DRAFT",
+  "SUBMITTED",
+  "DISPUTED",
+  "RESUBMITTED",
+  "APPROVED",
+  "PAID",
+  "REJECTED",
+  "PAYOUT_FAILED"
+] as const;
+
+export type ContractorTimesheetStatus = (typeof contractorTimesheetStatuses)[number];
+
+export interface ContractorTimesheetEntry {
+  id: string;
+  timesheetId: string;
+  workDate: string;
+  hours: number;
+  note?: string;
+}
+
+export interface ContractorTimesheet {
+  id: string;
+  orgId: string;
+  contractorId: string;
+  periodStart: string;
+  periodEnd: string;
+  status: ContractorTimesheetStatus;
+  totalHours: number;
+  totalAmountCents: number;
+  disputeReason?: string;
+  payoutInstructionId?: string;
+  txHash?: string;
+  anchorTxHashes: string[];
+  submittedAt?: string;
+  approvedAt?: string;
+  disputedAt?: string;
+  resolvedAt?: string;
+  paidAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const attestationActions = [
+  "EWA_REQUESTED",
+  "EWA_CONFIRMED",
+  "TIMESHEET_SUBMITTED",
+  "TIMESHEET_DISPUTED",
+  "TIMESHEET_RESOLVED",
+  "TIMESHEET_APPROVED",
+  "TIMESHEET_PAID"
+] as const;
+
+export type AttestationAction = (typeof attestationActions)[number];
+
+export interface SignatureAttestation {
+  id: string;
+  orgId: string;
+  action: AttestationAction;
+  actorUserId?: string;
+  actorRole?: Role;
+  actorWalletAddress: string;
+  payloadHash: string;
+  signature: string;
+  nonce: string;
+  deadline: string;
+  anchorTxHash?: string;
+  createdAt: string;
+}
+
+export interface ChainAnchorReceipt {
+  id: string;
+  orgId: string;
+  eventType: AttestationAction;
+  payloadHash: string;
+  txHash: string;
+  chainId: number;
+  createdAt: string;
 }

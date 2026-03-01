@@ -27,6 +27,15 @@ export const parseError = (error: unknown): { statusCode: number; message: strin
       return { statusCode: 422, message: error.message };
     }
 
+    if (
+      error.message.includes("SIGNATURE") ||
+      error.message.includes("WALLET_CHALLENGE") ||
+      error.message.includes("TOKEN_INVALID") ||
+      error.message.includes("SESSION_EXPIRED")
+    ) {
+      return { statusCode: 401, message: error.message };
+    }
+
     if (error.message.includes("NOT_READY") || error.message.includes("NOT_EXECUTABLE") || error.message.includes("EXCEEDS")) {
       return { statusCode: 409, message: error.message };
     }

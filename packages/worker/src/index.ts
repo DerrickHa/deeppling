@@ -99,7 +99,7 @@ export const executeInstructions = async (
             code: "TRANSFER_FAILED_AFTER_RETRIES",
             severity: "high",
             message: `Instruction ${instruction.id} failed after max retries.`,
-            employeeId: instruction.employeeId
+            employeeId: instruction.employeeId ?? instruction.payeeId
           });
         }
       }

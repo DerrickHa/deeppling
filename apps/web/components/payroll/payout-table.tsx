@@ -15,8 +15,10 @@ import { Badge } from "@/components/ui/badge";
 
 interface InstructionPayload {
   id: string;
-  employeeId: string;
+  payeeId: string;
+  payeeType: string;
   amountCents: number;
+  maskedAmount?: boolean;
   status: string;
   txHash?: string;
   errorCode?: string;
@@ -43,7 +45,7 @@ export function PayoutTable({ instructions }: PayoutTableProps) {
         <CardHeader>
           <CardTitle>Payout Instructions</CardTitle>
           <CardDescription>
-            Individual employee payouts will appear here after creating a run
+            Individual payout instructions appear here after creating a run
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -62,7 +64,7 @@ export function PayoutTable({ instructions }: PayoutTableProps) {
           <div>
             <CardTitle>Payout Instructions</CardTitle>
             <CardDescription>
-              Showing {visible.length} of {instructions.length} employee payouts
+              Showing {visible.length} of {instructions.length} payout instructions
             </CardDescription>
           </div>
           {remaining > 0 && (
@@ -75,6 +77,7 @@ export function PayoutTable({ instructions }: PayoutTableProps) {
           <TableHeader>
             <TableRow>
               <TableHead>Employee ID</TableHead>
+              <TableHead>Type</TableHead>
               <TableHead className="text-right">Amount</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Tx Hash</TableHead>
@@ -86,11 +89,14 @@ export function PayoutTable({ instructions }: PayoutTableProps) {
               <TableRow key={instruction.id}>
                 <TableCell>
                   <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono">
-                    {instruction.employeeId.slice(0, 8)}...
+                    {instruction.payeeId.slice(0, 8)}...
                   </code>
                 </TableCell>
+                <TableCell className="text-xs text-muted-foreground">
+                  {instruction.payeeType}
+                </TableCell>
                 <TableCell className="text-right font-medium tabular-nums">
-                  {formatUsd(instruction.amountCents)}
+                  {instruction.maskedAmount ? "Hidden" : formatUsd(instruction.amountCents)}
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={instruction.status} />

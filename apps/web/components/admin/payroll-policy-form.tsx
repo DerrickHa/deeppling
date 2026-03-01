@@ -20,6 +20,9 @@ interface OrgResponse {
   payrollPolicy?: {
     tokenAddress: string;
     status: string;
+    schedule: string;
+    anchorFriday: string;
+    timezone: string;
   };
 }
 
@@ -40,11 +43,17 @@ export function PayrollPolicyForm({ orgId, onUpdate, busy }: PayrollPolicyFormPr
         `/orgs/${orgId}/payroll-policy`,
         {
           method: "POST",
+          actor: {
+            email: "payroll-admin@demo.local",
+            role: "PayrollAdmin"
+          },
           body: JSON.stringify({
-            schedule: "MONTHLY",
-            cutoffDay: Number(form.get("cutoffDay")),
-            payoutDay: Number(form.get("payoutDay")),
+            schedule: "BIWEEKLY_FRIDAY",
+            anchorFriday: form.get("anchorFriday"),
+            timezone: form.get("timezone"),
             tokenAddress: form.get("tokenAddress"),
+            ewaEnabled: form.get("ewaEnabled") === "on",
+            ewaMaxAccrualPercent: Number(form.get("ewaMaxAccrualPercent")),
             maxRunAmount: form.get("maxRunAmount"),
             maxPayoutAmount: form.get("maxPayoutAmount"),
             approvedTokens: [form.get("tokenAddress")],
@@ -76,26 +85,39 @@ export function PayrollPolicyForm({ orgId, onUpdate, busy }: PayrollPolicyFormPr
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="policy-cutoff">Cutoff day</Label>
+              <Label htmlFor="policy-anchor">Anchor Friday</Label>
               <Input
-                id="policy-cutoff"
-                name="cutoffDay"
-                type="number"
-                min={1}
-                max={28}
-                defaultValue={25}
+                id="policy-anchor"
+                name="anchorFriday"
+                type="date"
+                defaultValue="2026-02-27"
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="policy-payout">Payout day</Label>
+              <Label htmlFor="policy-timezone">Timezone</Label>
               <Input
-                id="policy-payout"
-                name="payoutDay"
+                id="policy-timezone"
+                name="timezone"
+                defaultValue="America/New_York"
+                required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center gap-2 pt-6">
+              <input id="policy-ewa-enabled" name="ewaEnabled" type="checkbox" defaultChecked />
+              <Label htmlFor="policy-ewa-enabled">Enable Earned Wage Access</Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="policy-ewa-cap">EWA max accrual (%)</Label>
+              <Input
+                id="policy-ewa-cap"
+                name="ewaMaxAccrualPercent"
                 type="number"
                 min={1}
-                max={28}
-                defaultValue={1}
+                max={100}
+                defaultValue={100}
                 required
               />
             </div>
