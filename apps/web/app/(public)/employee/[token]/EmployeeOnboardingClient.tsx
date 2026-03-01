@@ -2,11 +2,11 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { apiRequest } from "@/lib/api";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorAlert } from "@/components/shared/error-alert";
@@ -29,12 +29,50 @@ type EmployeePayload = {
   readiness: string;
 };
 
-const stepOrder = ["identity", "employment", "tax", "wallet", "documents", "review"];
+const stepOrder = ["identity", "employment", "tax", "wallet", "documents", "review"] as const;
+type StepKey = (typeof stepOrder)[number];
+
+const stepMeta: Record<StepKey, { title: string; description: string }> = {
+  identity: {
+    title: "Identity & Contact",
+    description: "Tell us who you are and how payroll can reach you.",
+  },
+  employment: {
+    title: "Employment Profile",
+    description: "Confirm your role, start date, and salary details.",
+  },
+  tax: {
+    title: "Tax Profile",
+    description: "Set withholding preferences to keep payroll compliant.",
+  },
+  wallet: {
+    title: "Payout Wallet",
+    description: "Provision your managed wallet for payroll payouts.",
+  },
+  documents: {
+    title: "Document Signature",
+    description: "Review and sign your onboarding documents.",
+  },
+  review: {
+    title: "Review & Submit",
+    description: "Double-check everything and send your onboarding for review.",
+  },
+};
+
+const stepActionMap: Record<string, StepKey> = {
+  identity: "identity",
+  employment: "employment",
+  tax: "tax",
+  wallet: "wallet",
+  sign: "documents",
+  submit: "review",
+};
 
 export default function EmployeeOnboardingClient({ token }: { token: string }) {
   const [profile, setProfile] = useState<EmployeePayload | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [activeStepIndex, setActiveStepIndex] = useState<number | null>(null);
 
   const progress = useMemo(() => {
     if (!profile) return 0;
@@ -50,7 +88,15 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
     return firstIncomplete === -1 ? stepOrder.length - 1 : firstIncomplete;
   }, [profile]);
 
-  const runAction = async (label: string, fn: () => Promise<void>) => {
+  const activeIndex = activeStepIndex ?? currentStepIndex;
+  const activeStep = stepOrder[activeIndex];
+  const activeStatus = profile?.onboarding[activeStep] ?? "NOT_STARTED";
+  const isFirstStep = activeIndex === 0;
+  const isLastStep = activeIndex === stepOrder.length - 1;
+  const stepCompleted = activeStatus === "COMPLETED";
+  const navigationBusy = busy !== null && busy !== "load";
+
+  const runAction = async (label: string, fn: () => Promise<void>): Promise<boolean> => {
     setBusy(label);
     setError(null);
     try {
@@ -58,46 +104,78 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
       const latest = await apiRequest<EmployeePayload>(`/employee-onboarding/${token}`);
       setProfile(latest);
       if (label !== "load") {
-        toast.success(`Step "${label}" saved successfully.`);
+        const toastLabel = label === "sign" ? "documents" : label;
+        toast.success(`Step "${toastLabel}" saved.`);
       }
+      return true;
     } catch (caught) {
       const message = caught instanceof Error ? caught.message : "Unknown error";
       setError(message);
       if (label !== "load") {
         toast.error(`Failed: ${message}`);
       }
+      return false;
     } finally {
       setBusy(null);
     }
   };
 
   useEffect(() => {
-    runAction("load", async () => {
+    void runAction("load", async () => {
       const latest = await apiRequest<EmployeePayload>(`/employee-onboarding/${token}`);
       setProfile(latest);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
+  useEffect(() => {
+    if (!profile) return;
+    setActiveStepIndex((previous) => {
+      if (previous === null) {
+        return currentStepIndex;
+      }
+      return Math.max(0, Math.min(previous, stepOrder.length - 1));
+    });
+  }, [profile, currentStepIndex]);
+
+  const maybeAdvanceStep = (action: string) => {
+    const actionStep = stepActionMap[action];
+    if (!actionStep) return;
+
+    setActiveStepIndex((previous) => {
+      const current = previous ?? currentStepIndex;
+      if (stepOrder[current] !== actionStep) {
+        return current;
+      }
+      return Math.min(current + 1, stepOrder.length - 1);
+    });
+  };
+
   const submitForm = async (event: FormEvent<HTMLFormElement>, path: string) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
 
-    await runAction(path, async () => {
+    const ok = await runAction(path, async () => {
       await apiRequest(`/employee-onboarding/${token}/${path}`, {
         method: "POST",
         body: JSON.stringify(Object.fromEntries(form.entries())),
       });
     });
+    if (ok) {
+      maybeAdvanceStep(path);
+    }
   };
 
   const submitWallet = async () => {
-    await runAction("wallet", async () => {
+    const ok = await runAction("wallet", async () => {
       await apiRequest(`/employee-onboarding/${token}/wallet`, {
         method: "POST",
         body: JSON.stringify({}),
       });
     });
+    if (ok) {
+      maybeAdvanceStep("wallet");
+    }
   };
 
   const submitReview = async () => {
@@ -109,15 +187,96 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
     });
   };
 
+  const goToPrevious = () => {
+    setActiveStepIndex((previous) => {
+      const current = previous ?? currentStepIndex;
+      return Math.max(current - 1, 0);
+    });
+  };
+
+  const goToNext = () => {
+    if (!stepCompleted || isLastStep) return;
+    setActiveStepIndex((previous) => {
+      const current = previous ?? currentStepIndex;
+      return Math.min(current + 1, stepOrder.length - 1);
+    });
+  };
+
+  const renderActiveStep = () => {
+    switch (activeStep) {
+      case "identity":
+        return (
+          <IdentityForm
+            token={token}
+            onSubmit={submitForm}
+            busy={busy === "identity"}
+            status={profile?.onboarding["identity"] ?? "NOT_STARTED"}
+          />
+        );
+      case "employment":
+        return (
+          <EmploymentForm
+            token={token}
+            onSubmit={submitForm}
+            busy={busy === "employment"}
+            status={profile?.onboarding["employment"] ?? "NOT_STARTED"}
+          />
+        );
+      case "tax":
+        return (
+          <TaxForm
+            token={token}
+            onSubmit={submitForm}
+            busy={busy === "tax"}
+            status={profile?.onboarding["tax"] ?? "NOT_STARTED"}
+          />
+        );
+      case "wallet":
+        return (
+          <WalletStep
+            onProvision={submitWallet}
+            busy={busy === "wallet"}
+            status={profile?.onboarding["wallet"] ?? "NOT_STARTED"}
+          />
+        );
+      case "documents":
+        return (
+          <DocumentSignForm
+            token={token}
+            onSubmit={submitForm}
+            busy={busy === "sign"}
+            status={profile?.onboarding["documents"] ?? "NOT_STARTED"}
+          />
+        );
+      case "review":
+        return (
+          <ReviewStep
+            onboarding={profile?.onboarding ?? {}}
+            onSubmit={submitReview}
+            busy={busy === "submit"}
+            readiness={profile?.readiness ?? "NOT_READY"}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   const isLoading = busy === "load" && !profile;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-28 left-1/2 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/20 blur-3xl" />
+        <div className="absolute top-1/3 -left-24 h-56 w-56 rounded-full bg-chart-2/20 blur-3xl" />
+        <div className="absolute -right-20 bottom-12 h-56 w-56 rounded-full bg-chart-4/20 blur-3xl" />
+      </div>
+
       {/* Top bar */}
-      <header className="border-b bg-card sticky top-0 z-30">
-        <div className="max-w-2xl mx-auto flex items-center justify-between h-14 px-4 sm:px-6">
+      <header className="border-b border-border/70 bg-background/85 backdrop-blur-xl sticky top-0 z-30">
+        <div className="max-w-4xl mx-auto flex items-center justify-between h-14 px-4 sm:px-6">
           <Link href="/" className="flex items-center gap-2">
-            <div className="size-7 rounded-lg bg-primary flex items-center justify-center">
+            <div className="size-7 rounded-lg bg-primary/90 shadow-sm flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">D</span>
             </div>
             <span className="font-semibold text-lg tracking-tight">Deeppling</span>
@@ -129,30 +288,37 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
       </header>
 
       {/* Main content */}
-      <main className="flex-1 w-full max-w-2xl mx-auto px-4 sm:px-6 py-8 space-y-8">
-        {/* Page heading */}
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight">Employee Self-Onboarding</h1>
-          <p className="text-sm text-muted-foreground">
-            Complete all required steps to become payroll-ready. Invite token:{" "}
-            <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">{token}</code>
-          </p>
-        </div>
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-10 space-y-6">
+        <section className="relative overflow-hidden rounded-3xl border border-white/50 bg-card/80 backdrop-blur-xl p-6 sm:p-8 shadow-[0_16px_45px_-30px_color-mix(in_oklch,var(--color-primary)_55%,transparent)]">
+          <div className="absolute right-0 top-0 h-36 w-36 rounded-full bg-primary/15 blur-3xl" />
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-2">
+              <p className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                <Sparkles className="size-3.5" />
+                Guided onboarding
+              </p>
+              <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight">Employee Self-Onboarding</h1>
+              <p className="text-sm text-muted-foreground max-w-xl">
+                One focused step at a time. Save each section, then continue with Next.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              {profile && <Badge variant="secondary">{profile.email}</Badge>}
+              <Badge variant="outline">Token: {token.slice(0, 8)}...</Badge>
+            </div>
+          </div>
+        </section>
 
         {/* Loading skeleton */}
         {isLoading && (
-          <div className="space-y-6">
-            <Skeleton className="h-10 w-full" />
-            <div className="space-y-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="rounded-xl border p-6 space-y-3">
-                  <Skeleton className="h-5 w-40" />
-                  <Skeleton className="h-4 w-64" />
-                  <Skeleton className="h-9 w-full" />
-                  <Skeleton className="h-9 w-full" />
-                  <Skeleton className="h-9 w-3/4" />
-                </div>
-              ))}
+          <div className="rounded-2xl border bg-card/80 backdrop-blur-sm p-6 space-y-4">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-2.5 w-full" />
+            <div className="space-y-3 pt-2">
+              <Skeleton className="h-10 w-2/3" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-1/2" />
             </div>
           </div>
         )}
@@ -160,19 +326,24 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
         {/* Loaded content */}
         {profile && (
           <>
-            {/* Employee info bar */}
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="secondary">{profile.email}</Badge>
-              <Badge variant="outline">Progress: {progress}%</Badge>
-            </div>
-
-            {/* Progress bar */}
-            <div className="space-y-3">
-              <Progress value={progress} className="h-2" />
+            <div className="rounded-2xl border border-white/50 bg-card/80 backdrop-blur-sm p-5 sm:p-6 space-y-4 shadow-[0_10px_30px_-24px_color-mix(in_oklch,var(--color-primary)_60%,transparent)]">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Step {activeIndex + 1} of {stepOrder.length}
+                  </p>
+                  <p className="text-base font-semibold">{stepMeta[activeStep].title}</p>
+                  <p className="text-sm text-muted-foreground">{stepMeta[activeStep].description}</p>
+                </div>
+                <Badge variant="outline" className="w-fit">
+                  {progress}% complete
+                </Badge>
+              </div>
+              <Progress value={progress} className="h-2.5" />
               <StepIndicator
                 steps={stepOrder}
                 onboarding={profile.onboarding}
-                currentStep={currentStepIndex}
+                currentStep={activeIndex}
               />
             </div>
 
@@ -187,48 +358,41 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
               </div>
             )}
 
-            {/* Step cards */}
-            <div className="space-y-6">
-              <IdentityForm
-                token={token}
-                onSubmit={submitForm}
-                busy={busy === "identity"}
-                status={profile.onboarding["identity"] ?? "NOT_STARTED"}
-              />
+            <div className="rounded-3xl border border-white/50 bg-card/80 backdrop-blur-xl shadow-[0_16px_45px_-30px_color-mix(in_oklch,var(--color-primary)_65%,transparent)] overflow-hidden">
+              <div
+                key={activeStep}
+                className="animate-in fade-in slide-in-from-bottom-2 duration-300 [&_[data-slot=card]]:rounded-none [&_[data-slot=card]]:border-0 [&_[data-slot=card]]:bg-transparent [&_[data-slot=card]]:shadow-none"
+              >
+                {renderActiveStep()}
+              </div>
 
-              <EmploymentForm
-                token={token}
-                onSubmit={submitForm}
-                busy={busy === "employment"}
-                status={profile.onboarding["employment"] ?? "NOT_STARTED"}
-              />
-
-              <TaxForm
-                token={token}
-                onSubmit={submitForm}
-                busy={busy === "tax"}
-                status={profile.onboarding["tax"] ?? "NOT_STARTED"}
-              />
-
-              <WalletStep
-                onProvision={submitWallet}
-                busy={busy === "wallet"}
-                status={profile.onboarding["wallet"] ?? "NOT_STARTED"}
-              />
-
-              <DocumentSignForm
-                token={token}
-                onSubmit={submitForm}
-                busy={busy === "sign"}
-                status={profile.onboarding["documents"] ?? "NOT_STARTED"}
-              />
-
-              <ReviewStep
-                onboarding={profile.onboarding}
-                onSubmit={submitReview}
-                busy={busy === "submit"}
-                readiness={profile.readiness}
-              />
+              <div className="border-t bg-muted/35 px-5 py-4 sm:px-6 sm:py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {isLastStep
+                    ? "Final step: submit when everything looks correct."
+                    : stepCompleted
+                      ? "Saved. Continue to the next step whenever you're ready."
+                      : "Save this step to unlock Next."}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={goToPrevious}
+                    disabled={isFirstStep || navigationBusy}
+                  >
+                    <ArrowLeft className="size-4" />
+                    Back
+                  </Button>
+                  <Button
+                    onClick={goToNext}
+                    disabled={isLastStep || !stepCompleted || navigationBusy}
+                    className="min-w-24"
+                  >
+                    Next
+                    <ArrowRight className="size-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </>
         )}
@@ -246,7 +410,7 @@ export default function EmployeeOnboardingClient({ token }: { token: string }) {
 
       {/* Footer */}
       <footer className="border-t py-6 text-center text-xs text-muted-foreground">
-        Deeppling -- Onboarding & Payroll on Monad
+        Deeppling - Onboarding & Payroll on Monad
       </footer>
     </div>
   );
