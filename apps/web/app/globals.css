@@ -39,7 +39,7 @@
   --color-sidebar-border: oklch(0.88 0.01 210);
   --color-sidebar-ring: oklch(0.47 0.12 185);
   --radius: 0.625rem;
-  --font-sans: "Space Grotesk", "Inter Variable", "Avenir Next", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Variable", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 @layer base {
