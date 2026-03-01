@@ -77,3 +77,11 @@ Implemented areas include:
 - Files changed: `AGENTS.md`, `agent.md`.
 - Validation: Manual review for completeness and consistency with `README.md` and `CLAUDE.md`.
 - Risks/Follow-ups: Policy relies on agent compliance unless additional CI/git hook enforcement is added.
+
+### 2026-03-01 - Employee onboarding wizard UX modernization
+- Summary: Refactored employee self-onboarding UI from a multi-card stacked layout to a single active-step wizard with Back/Next navigation, step-aware auto-advance after successful submissions, and a refreshed visual shell (hero, progress panel, staged card transitions, and richer step indicator styling).
+- Rationale: Reduce cognitive overload by showing one task at a time and improve perceived product quality with clearer hierarchy, progressive disclosure, and modern visual treatment.
+- Requirements/Invariants touched: Preserved strict onboarding gating and readiness flow; Next navigation is intentionally locked until the active step is `COMPLETED`, and existing API action paths/status transitions (`identity`, `employment`, `tax`, `wallet`, `sign`, `submit`) remain unchanged.
+- Files changed: `apps/web/app/(public)/employee/[token]/EmployeeOnboardingClient.tsx`, `apps/web/components/employee/step-indicator.tsx`, `agent.md`.
+- Validation: `pnpm --filter @deeppling/web lint` passed with no warnings/errors; `pnpm --filter @deeppling/web build` passed (includes type checking and Next.js production build).
+- Risks/Follow-ups: Current wizard still uses static default field values from existing forms; consider pre-filling from persisted employee data in API payload for true resume/edit workflows. Token display is shortened in UI for cleanliness; if support/debug requires full token visibility, add a copy action instead of exposing full token by default.
