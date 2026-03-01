@@ -100,7 +100,7 @@ export function KybForm({ orgId, onUpdate, busy }: KybFormProps) {
               id="kyb-address"
               name="registeredAddress"
               placeholder="Registered address"
-              defaultValue="100 Monad Ave, New York, NY"
+              defaultValue="100 Commerce St, New York, NY"
               required
             />
           </div>

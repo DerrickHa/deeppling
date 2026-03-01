@@ -105,11 +105,11 @@ export default function HomePage() {
       <section className="mx-auto max-w-6xl px-6 pb-20 pt-24 text-center sm:pt-32 lg:pt-40">
         <div className="mx-auto max-w-3xl">
           <p className="mb-4 text-sm font-medium uppercase tracking-widest text-primary">
-            Unlink x Monad Hackathon
+            Enterprise Payroll Platform
           </p>
           <h1 className="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
             Enterprise Payroll on{" "}
-            <span className="text-primary">Unlink&nbsp;x&nbsp;Monad</span>
+            <span className="text-primary">Unlink x Monad</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground sm:text-xl">
             US-first employee onboarding with invite links, simulated compliance
@@ -163,7 +163,7 @@ export default function HomePage() {
       <footer className="border-t border-border/60 bg-white/60 backdrop-blur-sm">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6 text-sm text-muted-foreground">
           <span>Deeppling</span>
-          <span>Unlink x Monad Hackathon</span>
+          <span>&copy; 2026 Deeppling</span>
         </div>
       </footer>
     </div>

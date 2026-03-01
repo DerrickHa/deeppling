@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata = {
   title: "Deeppling",
-  description: "Rippling/Deel-style onboarding + autonomous payroll on Unlink x Monad",
+  description: "Enterprise onboarding and autonomous payroll on Unlink x Monad",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
