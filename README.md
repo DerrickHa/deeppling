@@ -1,5 +1,7 @@
 # Deeppling
 
+Update: We won @ the Unlink x Monad hackathon! ($2k USD) Thanks to them for hosting us!
+
 Rippling/Deel-style onboarding + autonomous payroll system for Unlink x Monad hackathon.
 
 ## What is implemented
